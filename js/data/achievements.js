@@ -9,7 +9,7 @@ export const ACHIEVEMENTS = [
   { id: 'quiz_five',     icon: '☿', name: '题海拾贝',     desc: '完成 5 次单元测验' },
   { id: 'first_exp',     icon: '⚗', name: '初入实验室',   desc: '记录第一条实验数据' },
   { id: 'exp_ten',       icon: '☲', name: '实验十记',     desc: '累计 10 条实验记录' },
-  { id: 'exp_all',       icon: '☵', name: '万物皆可测',   desc: '打开全部 13 个虚拟实验' },
+  { id: 'exp_all',       icon: '☵', name: '万物皆可测',   desc: '打开全部 14 个虚拟实验' },
   { id: 'flash_ten',     icon: '☴', name: '温故知新',     desc: '闪卡复习 10 个术语' },
   { id: 'density_float', icon: '♁', name: '浮沉之道',     desc: '完成密度实验挑战：控制物体的沉、浮与悬浮' },
   { id: 'sol_cool',      icon: '✶', name: '结晶大师',     desc: '完成溶解与结晶挑战：冷却析出晶体并记录产率' },
@@ -23,7 +23,9 @@ export const ACHIEVEMENTS = [
   { id: 'ptable_hunter', icon: '❂', name: '元素猎人',     desc: '速找元素小游戏 5/5 全对' },
   { id: 'flame_blue',    icon: '❃', name: '蓝色火焰',     desc: '调出完全燃烧的蓝色火焰' },
   { id: 'distill_pure',  icon: '☼', name: '蒸馏大师',     desc: '馏出液乙醇纯度 ≥ 85%' },
-  { id: 'sandbox_first', icon: '☪', name: '混合初体验',   desc: '在沙盒混合台完成 3 种不同反应' }
+  { id: 'sandbox_first', icon: '☪', name: '混合初体验',   desc: '在沙盒混合台完成 3 种不同反应' },
+  { id: 'o2_master',     icon: '✺', name: '制氧大师',     desc: '在分层工作台安全完成高锰酸钾制氧气全流程（气密性→装药→加热→收集→验满→先撤导管后熄灯）' },
+  { id: 'safety_perfect', icon: '✵', name: '零事故安全员', desc: '制氧气实验全程零红灯拦截完成' }
 ];
 
 export function achById(id) {

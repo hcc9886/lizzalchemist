@@ -11,10 +11,11 @@ import ptable from './ptable.js';
 import combustion from './combustion.js';
 import distill from './distill.js';
 import sandbox from './sandbox.js';
+import o2lab from './o2lab.js';
 
 export const EXPERIMENTS = {
   density, solubility, titration, chromatography, gaslaws, rate, cell, calorimetry,
-  molecule, ptable, combustion, distill, sandbox
+  molecule, ptable, combustion, distill, sandbox, o2lab
 };
 
 export function expById(id) {

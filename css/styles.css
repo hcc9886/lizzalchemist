@@ -295,3 +295,34 @@ mark{background:rgba(212,165,66,.3);color:var(--gold2);padding:0 2px;border-radi
   #print-area table{width:100%;border-collapse:collapse}
   #print-area table th,#print-area table td{border:1px solid #999;padding:6px 10px;text-align:left}
 }
+
+/* ===== v3 引擎：红绿灯护栏 / 目标条 / 六标签面板 ===== */
+.tl-bar{display:flex;align-items:center;gap:8px;margin:10px 0 12px;padding:9px 14px;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.tl-lamp{width:16px;height:16px;border-radius:50%;background:#0a0812;border:1px solid var(--line);
+  display:inline-block;position:relative;flex:none}
+.tl-lamp.g.on{background:var(--emerald);box-shadow:0 0 8px var(--emerald)}
+.tl-lamp.y.on{background:var(--gold);box-shadow:0 0 8px var(--gold)}
+.tl-lamp.r.on{background:var(--red);box-shadow:0 0 10px var(--red);animation:tlblink .7s infinite}
+@keyframes tlblink{50%{opacity:.45}}
+.tl-msg{color:var(--muted);font-size:13.5px;margin-left:4px}
+.tl-msg b{color:var(--ink)}
+.goal-chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+.gchip{font-size:12.5px;padding:5px 12px;border:1px solid var(--line);border-radius:999px;
+  background:var(--panel);color:var(--muted);transition:all .25s}
+.gchip.done{color:var(--emerald);border-color:var(--emerald);background:rgba(46,168,130,.08)}
+.sixtab{margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.sixtab .tabbar.six{display:flex;flex-wrap:wrap;gap:2px;padding:8px 10px 0;border-bottom:1px solid var(--line)}
+.sixtab .tabbar.six button{background:none;border:none;color:var(--muted);font-size:13.5px;
+  padding:8px 14px;border-radius:10px 10px 0 0;cursor:pointer;font-family:var(--sans)}
+.sixtab .tabbar.six button:hover{color:var(--ink);background:var(--panel2)}
+.sixtab .tabbar.six button.on{color:var(--gold2);background:var(--panel2);box-shadow:inset 0 -2px 0 var(--gold)}
+.stab-body{padding:14px 18px 18px;min-height:120px;font-size:14px}
+.stab-body p{margin:6px 0}
+.stab-table{width:100%;border-collapse:collapse;font-size:13.5px}
+.stab-table th{text-align:left;color:var(--gold2);font-weight:600;padding:6px 10px;border-bottom:1px solid var(--line)}
+.stab-table td{padding:6px 10px;border-bottom:1px solid rgba(55,48,92,.5);color:var(--ink)}
+.stab-table td:first-child{color:var(--gold2);white-space:nowrap}
+.stab-body .kit-goals{margin:0;padding-left:6px;list-style:none}
+.stab-body .kit-goals li{padding:3px 0}
+.muted{color:var(--muted)}

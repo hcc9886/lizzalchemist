@@ -54,14 +54,48 @@ for (const a of ACHIEVEMENTS) {
   if (!a.icon || !a.name || !a.desc) errors.push('成就条目不完整: ' + a.id);
 }
 
-// 8) 全部 13 个实验就位
+// 8) 全部 14 个实验就位
 const expectedExps = ['density', 'solubility', 'titration', 'chromatography', 'gaslaws', 'rate',
-  'cell', 'calorimetry', 'molecule', 'ptable', 'combustion', 'distill', 'sandbox'];
+  'cell', 'calorimetry', 'molecule', 'ptable', 'combustion', 'distill', 'sandbox', 'o2lab'];
 for (const id of expectedExps) {
   const e = EXPERIMENTS[id];
   if (!e) { errors.push('缺少实验: ' + id); continue; }
   if (!e.title || !e.oneLine || !Array.isArray(e.safety) || !e.safety.length || typeof e.render !== 'function')
     errors.push('实验字段不完整: ' + id);
+}
+
+// 9) 器材库（v3 配置驱动）
+import { APPARATUS_INDEX, APPARATUS_TREE, APPARATUS_COUNT } from './js/data/apparatus.js';
+const aIds = Object.keys(APPARATUS_INDEX);
+if (new Set(aIds).size !== aIds.length) errors.push('器材 SKU ID 有重复');
+for (const d of Object.values(APPARATUS_INDEX)) {
+  const def = d.def;
+  if (!def.name || !def.kind) errors.push('器材定义不完整: ' + d.id);
+  for (const itf of (def.interfaces || [])) {
+    if (!itf.id || !itf.type) errors.push('器材接口不完整: ' + d.id + '/' + itf.id);
+  }
+  for (const n of (def.allowed_neighbors || [])) {
+    if (n !== '*' && !n.endsWith('*') && !APPARATUS_INDEX[n]) errors.push('器材邻接规则指向不存在的器材: ' + d.id + ' -> ' + n);
+  }
+}
+// 分类树里引用的器材必须存在
+for (const [k1, v1] of Object.entries(APPARATUS_TREE)) {
+  for (const [k2, v2] of Object.entries(v1.children)) {
+    const names = Array.isArray(v2.items) ? v2.items : Object.keys(v2.items || {});
+    names.forEach(nm => { if (!APPARATUS_INDEX[nm]) errors.push(`分类树 ${k1}/${k2} 引用不存在器材: ${nm}`); });
+  }
+}
+
+// 10) 化学品库（v3 详情页 schema）
+import { CHEMICALS, CHEM_COUNT } from './js/data/chemicals.js';
+const cIds = Object.keys(CHEMICALS);
+if (new Set(cIds).size !== cIds.length) errors.push('化学品 ID 有重复');
+if (cIds.length < 50) errors.push('化学品数量不足 50 种: ' + cIds.length);
+for (const [k, v] of Object.entries(CHEMICALS)) {
+  if (!v.name || !v.en || !v.formula) errors.push('化学品字段不完整: ' + k);
+  if (v.ghs && (!Array.isArray(v.ghs.pictos) || !Array.isArray(v.ghs.h) || !Array.isArray(v.ghs.p)))
+    errors.push('化学品 GHS 结构错误: ' + k);
+  for (const r of (v.reactions || [])) if (!r.eq) errors.push('化学品反应缺方程式: ' + k);
 }
 
 if (errors.length) {
@@ -72,6 +106,8 @@ if (errors.length) {
     Object.values(QUIZZES).reduce((s, q) => s + q.length, 0) + ' questions), ' +
     Object.keys(EXPERIMENTS).length + ' experiments, ' +
     ACHIEVEMENTS.length + ' achievements, ' +
+    APPARATUS_COUNT + ' apparatus SKUs, ' +
+    CHEM_COUNT + ' chemicals, ' +
     TIMELINE.length + ' timeline stages, ' +
     SYMBOLS.length + ' symbols, ' +
     Object.keys(GLOSSARY).length + ' glossary terms');
