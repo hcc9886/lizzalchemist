@@ -1,6 +1,10 @@
 // PubChem PUG-REST 回填：为 InChIKey 为 null 的化学品补全 InChIKey / SMILES / 分子量。
 // 本地数据优先生效；网络失败静默降级（教学内容不依赖网络）。结果缓存到 localStorage。
-const CACHE_KEY = 'alchemia_pubchem_v1';
+const CACHE_KEY = 'alchemist_pubchem_v1';
+try { // 品牌改名迁移
+  const old = localStorage.getItem('alchemia_pubchem_v1');
+  if (old && !localStorage.getItem(CACHE_KEY)) localStorage.setItem(CACHE_KEY, old);
+} catch (e) { /* ignore */ }
 
 function loadCache() {
   try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); } catch (e) { return {}; }
@@ -49,7 +53,7 @@ export async function hydrateChem(chem) {
     chem._pcCid = p.CID || null;
     cache[chem.id] = { inchikey: p.InChIKey, smiles: p.SMILES || null, mw: chem.mw, cid: chem._pcCid, ts: Date.now() };
     saveCache(cache);
-    window.dispatchEvent(new CustomEvent('alchemia:chem', { detail: chem.id }));
+    window.dispatchEvent(new CustomEvent('alchemist:chem', { detail: chem.id }));
     return 'fetched';
   }
   return 'offline';

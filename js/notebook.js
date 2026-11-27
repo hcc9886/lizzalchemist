@@ -61,7 +61,7 @@ function exportCSV() {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'alchemia-实验本-' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.download = 'alchemist-实验本-' + new Date().toISOString().slice(0, 10) + '.csv';
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }

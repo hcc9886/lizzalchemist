@@ -1,4 +1,8 @@
-const KEY = 'alchemia_state_v1';
+const KEY = 'alchemist_state_v1';
+try { // 品牌改名迁移：旧 alchemia 存档搬到新键
+  const old = localStorage.getItem('alchemia_state_v1');
+  if (old && !localStorage.getItem(KEY)) localStorage.setItem(KEY, old);
+} catch (e) { /* ignore */ }
 
 const DEFAULT = {
   persona: null,            // 'zero' | 'middle' | 'college' | 'adult' | 'teacher'

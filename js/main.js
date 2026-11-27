@@ -60,7 +60,7 @@ function scoreOf(unitId) {
 function maybeOnboarding() {
   if (store.state.persona) return;
   openModal(`
-    <h3>欢迎来到 Alchemia</h3>
+    <h3>欢迎来到 LizzAlchemist</h3>
     <p class="muted">从人类与火，到原子与分子——这里是一条从零基础到精通的炼金术与化学之路。先告诉我们你是谁，好为你推荐路线（之后随时可换）：</p>
     <div class="persona-list">
       <button data-p="zero"><b>零基础探索者</b><span>没学过化学，从头开始，完全不怕听不懂</span></button>
@@ -96,7 +96,7 @@ function viewHome() {
   ];
   view.innerHTML = `
     <div class="hero">
-      <div class="eyebrow">ALCHEMIA · 从火种到元素</div>
+      <div class="eyebrow">LIZZALCHEMIST · 从火种到元素</div>
       <h1>人人都能成为炼金术士</h1>
       <p class="lead">沿着化学与炼金术的起源学习：历史时间轴、${s.total} 个详细课程单元、${Object.keys(EXPERIMENTS).length} 个带目标挑战的虚拟实验、成就徽章与实验本。炼金术作为历史文化，化学作为可验证科学——零基础也能一路学到精通。</p>
       <div class="hero-actions">
@@ -486,7 +486,7 @@ function viewTutor() {
     <p class="muted">规则版演示导师：不直接给答案，而是给思考链与追问，引导你自己推出结论。无需联网；未来可接入大模型获得完整对话能力。</p>
     <div class="chat">
       <div class="chat-log" id="t-log">
-        <div class="msg bot">你好，我是 Alchemia 的规则导师。问我化学问题（如"什么是摩尔""催化剂为什么加速反应"），或直接点下面的话题按钮。${lastContext.unit ? '我看到你刚学了「' + lastContext.unit + '」。' : ''}</div>
+        <div class="msg bot">你好，我是 LizzAlchemist 的规则导师。问我化学问题（如"什么是摩尔""催化剂为什么加速反应"），或直接点下面的话题按钮。${lastContext.unit ? '我看到你刚学了「' + lastContext.unit + '」。' : ''}</div>
       </div>
       <div class="chips">${QUICK_TOPICS.map(t => `<button class="chip-btn">${t}</button>`).join('')}</div>
       <div class="chat-input">
@@ -776,8 +776,8 @@ function viewChemDetail(id) {
     const ik = document.getElementById('pc-ik'), smi = document.getElementById('pc-smi'), mw = document.getElementById('pc-mw');
     if (ik && c.inchikey) { ik.textContent = c.inchikey; smi.textContent = c.smiles || smi.textContent; mw.textContent = c.mw || mw.textContent; toast('PubChem 数据已补全'); }
   };
-  window.addEventListener('alchemia:chem', onChem);
-  const cleanup = () => window.removeEventListener('alchemia:chem', onChem);
+  window.addEventListener('alchemist:chem', onChem);
+  const cleanup = () => window.removeEventListener('alchemist:chem', onChem);
   view.dataset.chemCleanup = '';
   hydrateChem(c).then(src => {
     const st = document.getElementById('pc-status');
@@ -918,9 +918,9 @@ function viewAchievements() {
     printHtml('炼金术士证书',
       `<div style="text-align:center;font-family:serif">
         <h1 style="font-size:34px;margin:30px 0 6px">炼金术士证书</h1>
-        <p style="letter-spacing:6px">CERTIFICATUM ALCHEMIAE</p>
+        <p style="letter-spacing:6px">CERTIFICATUM ALCHIMISTAE</p>
         <p style="margin:26px 0;font-size:17px">兹证明 <b>________________</b></p>
-        <p style="margin:8px 0">已在 Alchemia 炼金术与化学学堂完成修行：</p>
+        <p style="margin:8px 0">已在 LizzAlchemist 炼金术学堂完成修行：</p>
         <p style="margin:8px 0">课程单元 ${s.done} / ${s.total} · 测验 ${s.quizN} 场（平均 ${s.avg} 分） · 实验记录 ${s.expN} 条 · 成就徽章 ${n} / ${ACHIEVEMENTS.length} 枚</p>
         <p style="margin:26px 0">从火种到元素，愿你在虚实的边界上，以科学为炉，以好奇为火。</p>
         <p style="margin-top:40px">导师签章：____________　　日期：____________</p>
