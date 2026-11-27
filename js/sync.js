@@ -1,6 +1,6 @@
 /* 账号与多平台云同步 —— Supabase 零依赖 REST 客户端（无 SDK、无构建步骤）
  *
- * 数据流：progress.js save() → document 'alchemist:saved' → 本模块 5s 防抖推送 progress 表
+ * 数据流：progress.js save() → document 'alchemist:saved' → 本模块 5s 防抖推送 alchemist 表
  * boot()：刷新会话 → 拉云端 → 双向按 updatedAt 新者胜合并；覆盖本地前自动备份到 localStorage（保留最近 3 份）
  * 未配置 / 未登录 / 网络错误全部降级为纯本地模式，不影响任何功能。
  */
@@ -8,7 +8,7 @@ import { SUPABASE } from './config.js';
 
 const CFG_KEY = 'alchemist_supabase_cfg_v1';
 const SESS_KEY = 'alchemist_supabase_sess_v1';
-const TABLE = 'progress';
+const TABLE = 'alchemist';
 const PUSH_DELAY = 5000;
 
 let localCfg = null;
@@ -130,7 +130,8 @@ export function statusOf() {
 
 export function fmtErr(e) {
   const m = (e && e.message) || String(e);
-  if (/PGRST205|Could not find the table/i.test(m)) return '云端 progress 表还没创建：请在 Supabase SQL Editor 执行账号面板里的建表 SQL';
+  if (/PGRST205|Could not find the table/i.test(m)) return '云端表还没创建：请在 Supabase SQL Editor 执行账号面板里的建表 SQL';
+  if (/column .*\.(user_id|data) does not exist|42703/.test(m)) return 'alchemist 表缺列：请在 Supabase SQL Editor 执行账号面板里的升级 SQL';
   if (/Failed to fetch|NetworkError|Load failed/i.test(m)) return '网络不可达：检查网络或 Supabase 项目是否暂停';
   if (/Invalid login credentials/i.test(m)) return '邮箱或密码不对';
   if (/Email not confirmed/i.test(m)) return '请先到邮箱点确认链接，再回来登录';

@@ -832,5 +832,259 @@ export const KINDS = {
     for (const [dx, dy, r] of [[-6, 0, 5], [0, -3, 6], [6, 1, 5], [0, 4, 5]]) {
       g.beginPath(); g.arc(dx, dy, r, 0, 7); g.fill();
     }
+  },
+  /* ————— v4 扩容器材渲染器 ————— */
+  cuvette(g, it) {
+    const w = it.def.w - 6, h = it.def.h - 8;
+    g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, 2); glassFill(g);
+    g.strokeStyle = C.glassHi;
+    g.beginPath(); g.moveTo(-w / 2 + 3, -h / 2 + 3); g.lineTo(-w / 2 + 3, h / 2 - 3); g.stroke();
+    if (it.liq) drawLiquid(g, { kind: 'straight', x0: -w / 2 + 2, x1: w / 2 - 2, yTop: -4, yBot: h / 2 - 2 }, it.liq, it._t || 0);
+    lbl(g, it);
+  },
+  syringe(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.beginPath(); g.roundRect(-w / 2 + 10, -h / 2 + 3, w - 22, h - 6, 2); glassFill(g);
+    g.strokeStyle = C.metal; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(-w / 2 + 12, 0); g.lineTo(-w / 2 + 2, 0); g.moveTo(w / 2 - 12, 0); g.lineTo(w / 2, 0); g.stroke();
+    g.lineWidth = 1;
+    g.fillStyle = C.metalD; g.fillRect(-w / 2 - 2, -h / 2, 4, h);
+    g.fillStyle = C.metal; g.fillRect(-w / 2 - 5, -5, 3, 10);
+    if (it.liq) drawLiquid(g, { kind: 'straight', x0: -w / 2 + 12, x1: w / 2 - 14, yTop: -h / 2 + 5, yBot: h / 2 - 5 }, it.liq, it._t || 0);
+  },
+  heating_mantle(g, it, t) {
+    const w = it.def.w, h = it.def.h;
+    g.fillStyle = C.metalD;
+    g.beginPath(); g.moveTo(-w / 2, h / 2); g.lineTo(-w / 2, 2);
+    g.arc(0, 2, w / 2, Math.PI, 0); g.lineTo(w / 2, h / 2); g.closePath(); g.fill();
+    g.strokeStyle = C.metal; g.lineWidth = 2; g.beginPath(); g.ellipse(0, 2, w / 2, 7, 0, 0, 7); g.stroke();
+    if (it.fsm && it.fsm.state === 'on') {
+      g.strokeStyle = '#c65a41'; g.lineWidth = 2;
+      for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(0, 2, w / 2 - 8 - i * 6, Math.PI + .2, Math.PI * 2 - .2); g.stroke(); }
+      g.fillStyle = 'rgba(198,90,65,.10)'; g.beginPath(); g.ellipse(0, -6, w / 2, 12 + Math.sin(t / 200) * 2, 0, 0, 7); g.fill();
+    }
+    g.strokeStyle = C.muted; g.beginPath(); g.moveTo(w / 2 - 8, h / 2 - 2); g.quadraticCurveTo(w / 2 + 12, h / 2 + 8, w / 2 + 18, h / 2 + 16); g.stroke();
+    lbl(g, it);
+  },
+  sand_bath(g, it, t) {
+    const w = it.def.w, h = it.def.h;
+    g.fillStyle = C.metalD; g.beginPath(); g.roundRect(-w / 2, 0, w, h / 2, 4); g.fill();
+    g.fillStyle = '#a78355'; g.beginPath(); g.ellipse(0, 0, w / 2 - 4, 8, 0, 0, 7); g.fill();
+    g.fillStyle = '#d8b87a';
+    for (let i = 0; i < 22; i++) { const x = (i * 17 % 61) - 30, y = (i * 11 % 9) - 4; g.beginPath(); g.arc(x, y, 1.2, 0, 7); g.fill(); }
+    if (it.fsm && it.fsm.state === 'on') { g.fillStyle = '#c65a41'; g.beginPath(); g.arc(w / 2 - 9, h / 4, 3, 0, 7); g.fill(); }
+    lbl(g, it);
+  },
+  furnace(g, it, t) {
+    const w = it.def.w, h = it.def.h;
+    g.fillStyle = C.metalD; g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, 5); g.fill();
+    g.fillStyle = '#2a2445'; g.beginPath(); g.roundRect(-w / 2 + 8, -h / 2 + 8, w - 16, h * .55, 3); g.fill();
+    if (it.fsm && it.fsm.state === 'on') {
+      g.fillStyle = `rgba(232,112,58,${.28 + Math.sin(t / 260) * .05})`; g.fill();
+      g.strokeStyle = '#e8703a'; g.beginPath(); g.moveTo(-w / 2 + 16, -h / 2 + 14); g.lineTo(-w / 2 + 16, h / 2 - 16); g.stroke();
+    }
+    g.fillStyle = C.metal; g.fillRect(w / 2 - 14, h / 2 - 16, 6, 18);
+    g.fillStyle = '#2ea882'; g.font = '8px monospace'; g.textAlign = 'center'; g.fillText(it.fsm && it.fsm.state === 'on' ? 'ON' : 'OFF', 0, h / 2 - 6); g.textAlign = 'left';
+    lbl(g, it);
+  },
+  infrared_lamp(g, it, t) {
+    const h = it.def.h;
+    g.strokeStyle = C.metal; g.lineWidth = 4;
+    g.beginPath(); g.moveTo(0, h / 2); g.lineTo(0, -8); g.lineTo(16, -h / 2 + 20); g.stroke();
+    g.fillStyle = C.metalD; g.beginPath(); g.roundRect(-16, h / 2 - 6, 32, 6, 3); g.fill();
+    g.fillStyle = it.fsm && it.fsm.state === 'on' ? '#d98b58' : C.metalD;
+    g.beginPath(); g.arc(20, -h / 2 + 25, 13, 0, 7); g.fill();
+    g.strokeStyle = C.glassE; g.stroke();
+    if (it.fsm && it.fsm.state === 'on') {
+      g.strokeStyle = `rgba(240,201,106,${.45 + Math.sin(t / 180) * .12})`; g.lineWidth = 1.5;
+      for (const a of [-.7, -.35, 0, .35, .7]) { g.beginPath(); g.moveTo(20 + Math.cos(a - 1.57) * 16, -h / 2 + 25 + Math.sin(a - 1.57) * 16); g.lineTo(20 + Math.cos(a - 1.57) * 28, -h / 2 + 25 + Math.sin(a - 1.57) * 28); g.stroke(); }
+    }
+    lbl(g, it);
+  },
+  clay_triangle(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.strokeStyle = C.metal; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(-w / 2, h / 2); g.lineTo(0, -h / 2); g.lineTo(w / 2, h / 2); g.closePath(); g.stroke();
+    g.strokeStyle = '#b8a077'; g.lineWidth = 5;
+    for (const [x1, y1, x2, y2] of [[-w / 2 + 4, h / 2 - 2, -8, 0], [w / 2 - 4, h / 2 - 2, 8, 0], [0, -h / 2 + 3, 0, 2]]) {
+      g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+    }
+  },
+  test_tube_holder(g, it) {
+    const w = it.def.w;
+    g.strokeStyle = C.metal; g.lineWidth = 3; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-w / 2, -4); g.lineTo(w / 2 - 10, -4); g.stroke();
+    g.beginPath(); g.moveTo(-w / 2 + 8, -4); g.quadraticCurveTo(-w / 2 + 18, 10, -w / 2 + 28, -4); g.stroke();
+    g.beginPath(); g.arc(w / 2 - 8, 0, 7, Math.PI * .5, Math.PI * 1.5); g.stroke();
+    g.lineCap = 'butt'; g.fillStyle = '#4a3f66'; g.beginPath(); g.arc(-w / 2 + 3, -4, 4, 0, 7); g.fill();
+  },
+  test_tube_rack(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.fillStyle = '#6b5a86'; g.beginPath(); g.roundRect(-w / 2, h / 2 - 10, w, 10, 3); g.fill();
+    g.fillStyle = '#4a3f66'; g.fillRect(-w / 2 + 10, -h / 2 + 8, w - 20, 8);
+    g.strokeStyle = C.metal; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(-w / 2 + 12, h / 2 - 10); g.lineTo(-w / 2 + 12, -h / 2 + 8); g.moveTo(w / 2 - 12, h / 2 - 10); g.lineTo(w / 2 - 12, -h / 2 + 8); g.stroke();
+    g.fillStyle = '#2a2445';
+    for (let i = 0; i < 5; i++) { g.beginPath(); g.arc(-w / 2 + 16 + i * (w - 32) / 4, -h / 2 + 8, 4, 0, 7); g.fill(); }
+    lbl(g, it);
+  },
+  vacuum_pump(g, it, t) {
+    const w = it.def.w, h = it.def.h;
+    g.fillStyle = C.metalD; g.beginPath(); g.roundRect(-w / 2 + 4, -h / 2 + 10, w - 12, h - 12, 7); g.fill();
+    g.fillStyle = C.metal; g.beginPath(); g.arc(-w / 2 + 18, 0, 10, 0, 7); g.fill();
+    g.fillStyle = '#2a2445'; g.beginPath(); g.arc(-w / 2 + 18, 0, 5, 0, 7); g.fill();
+    g.strokeStyle = C.muted; g.lineWidth = 3; g.beginPath(); g.moveTo(w / 2 - 10, 0); g.lineTo(w / 2 + 2, 0); g.stroke();
+    if (it.fsm && it.fsm.state === 'on') { g.fillStyle = '#2ea882'; g.beginPath(); g.arc(w / 2 - 15, h / 2 - 8, 3, 0, 7); g.fill(); }
+    lbl(g, it);
+  },
+  distilling_flask(g, it, t) {
+    this.flask_round(g, it, t);
+    g.strokeStyle = C.glassE; g.lineWidth = 5; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(it.def.w / 2 - 12, -4); g.lineTo(it.def.w / 2 + 2, -4); g.lineTo(it.def.w / 2 + 8, -12); g.stroke();
+    g.lineWidth = 1; g.lineCap = 'butt';
+  },
+  condenser(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, 5); glassFill(g);
+    g.fillStyle = 'rgba(95,147,201,.13)'; g.fillRect(-w / 2 + 3, -h / 2 + 6, w - 6, h - 12);
+    g.strokeStyle = C.glassHi; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(0, -h / 2 + 3); g.lineTo(0, h / 2 - 3); g.stroke(); g.lineWidth = 1;
+    g.strokeStyle = C.metal; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(-w / 2 - 5, h * .3); g.lineTo(-w / 2 + 4, h * .3); g.moveTo(w / 2 - 4, -h * .3); g.lineTo(w / 2 + 5, -h * .3); g.stroke(); g.lineWidth = 1;
+    g.strokeStyle = C.glassE;
+    for (let i = 1; i < 5; i++) { const y = -h / 2 + i * h / 5; g.beginPath(); g.moveTo(-w / 2 + 3, y); g.lineTo(w / 2 - 3, y); g.stroke(); }
+    lbl(g, it);
+  },
+  adapter(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.strokeStyle = 'rgba(160,190,225,.35)'; g.lineWidth = 8; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-w / 2, -h / 2); g.lineTo(-w / 6, -h / 2); g.quadraticCurveTo(0, -h / 4, 0, 0); g.lineTo(w / 2, h / 2); g.stroke();
+    g.strokeStyle = C.glassHi; g.lineWidth = 1.5; g.stroke(); g.lineWidth = 1; g.lineCap = 'butt';
+  },
+  fractionating_column(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.beginPath(); g.roundRect(-w / 2 + 4, -h / 2, w - 8, h, 5); glassFill(g);
+    g.strokeStyle = C.glassHi;
+    for (let i = 0; i < 7; i++) { const y = -h / 2 + 12 + i * (h - 24) / 7; g.beginPath(); g.moveTo(-w / 2 + 7, y); g.lineTo(-w / 2 + 18, y + 7); g.lineTo(w / 2 - 7, y + 7); g.lineTo(w / 2 - 18, y); g.stroke(); }
+    g.fillStyle = 'rgba(212,165,66,.45)'; g.beginPath(); g.arc(0, -h / 2 + 18, 2, 0, 7); g.fill();
+    lbl(g, it);
+  },
+  rotary_evaporator(g, it, t) {
+    const w = it.def.w, h = it.def.h;
+    g.fillStyle = C.metalD; g.beginPath(); g.roundRect(-w / 2, -8, w, 18, 4); g.fill();
+    g.fillStyle = '#2a2445'; g.beginPath(); g.roundRect(-w / 2 + 8, -4, w * .32, 10, 3); g.fill();
+    g.fillStyle = it.fsm && it.fsm.state === 'on' ? '#2ea882' : '#5a6175'; g.beginPath(); g.arc(-w / 2 + 17, 1, 2.5, 0, 7); g.fill();
+    g.fillStyle = '#6b5a86'; g.beginPath(); g.arc(-w * .05, -h * .25, w * .19, 0, 7); g.fill();
+    g.save(); g.translate(-w * .05, -h * .3); g.rotate(it.fsm && it.fsm.state === 'on' ? t / 350 : .35);
+    g.beginPath(); g.arc(0, 0, w * .14, 0, 7); glassFill(g);
+    g.fillStyle = 'rgba(95,147,201,.25)'; g.beginPath(); g.arc(0, 0, w * .10, 0, 7); g.fill(); g.restore();
+    g.strokeStyle = C.glassE; g.lineWidth = 5;
+    g.beginPath(); g.moveTo(w * .12, -h * .33); g.lineTo(w * .28, -h * .44); g.lineTo(w * .38, -h * .3); g.stroke();
+    g.beginPath(); g.roundRect(w * .34, -h * .3, w * .11, h * .38, 4); g.stroke(); g.lineWidth = 1;
+    g.beginPath(); g.arc(w * .4, h * .15, w * .09, 0, 7); glassFill(g);
+    lbl(g, it);
+  },
+  buchner_funnel(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.beginPath(); g.moveTo(-w / 2, -h / 2); g.lineTo(w / 2, -h / 2); g.lineTo(5, 0); g.lineTo(5, h / 2); g.lineTo(-5, h / 2); g.lineTo(-5, 0); g.closePath(); glassFill(g);
+    g.fillStyle = 'rgba(234,228,210,.55)'; g.beginPath(); g.ellipse(0, -h / 2 + 3, w / 2 - 3, 5, 0, 0, 7); g.fill();
+    g.fillStyle = C.metalD;
+    for (let i = 0; i < 12; i++) { const x = (i % 4 - 1.5) * 6, y = -h / 2 + 3 + Math.floor(i / 4) * 4; g.beginPath(); g.arc(x, y, 1, 0, 7); g.fill(); }
+    lbl(g, it);
+  },
+  filter_flask(g, it, t) {
+    this.flask_conical(g, it, t);
+    g.strokeStyle = C.glassE; g.lineWidth = 5; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(it.def.w / 2 - 10, -6); g.lineTo(it.def.w / 2 + 4, -6); g.stroke();
+    g.lineWidth = 1; g.lineCap = 'butt';
+  },
+  thimble(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.fillStyle = 'rgba(234,228,210,.65)'; g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, 4); g.fill();
+    g.strokeStyle = C.glassE; g.stroke();
+    g.fillStyle = 'rgba(90,58,122,.45)';
+    for (let i = 0; i < 10; i++) { g.beginPath(); g.arc((i * 7 % 13) - 6, -h / 2 + 10 + i * 5, 1.6, 0, 7); g.fill(); }
+  },
+  soxhlet(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.beginPath(); g.roundRect(-w / 2 + 4, -h / 2, w - 8, h, 5); glassFill(g);
+    g.strokeStyle = C.glassHi; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(-w / 2 + 11, -h / 2 + 4); g.lineTo(-w / 2 + 11, h / 2 - 26); g.quadraticCurveTo(-w / 2 + 11, h / 2 - 12, 0, h / 2 - 12); g.lineTo(0, h / 2); g.stroke();
+    g.beginPath(); g.moveTo(w / 2 - 11, -h / 2); g.quadraticCurveTo(w / 2 + 3, -h / 4, w / 2 - 11, 0); g.stroke(); g.lineWidth = 1;
+    g.fillStyle = 'rgba(95,147,201,.20)'; g.fillRect(-w / 2 + 6, 8, w - 12, h / 2 - 22);
+    lbl(g, it);
+  },
+  drying_tube(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.strokeStyle = 'rgba(160,190,225,.4)'; g.lineWidth = 7; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-w / 2, -h / 2); g.lineTo(-w / 2, 0); g.quadraticCurveTo(0, h / 2, w / 2, 0); g.lineTo(w / 2, -h / 2); g.stroke();
+    g.strokeStyle = C.glassHi; g.lineWidth = 1.5; g.stroke();
+    g.fillStyle = 'rgba(95,147,201,.18)'; g.beginPath(); g.ellipse(0, h / 4, w / 2 - 4, h / 4, 0, 0, 7); g.fill(); g.lineWidth = 1; g.lineCap = 'butt';
+    lbl(g, it);
+  },
+  desiccator(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.fillStyle = C.glass; g.beginPath(); g.roundRect(-w / 2, -h / 2 + 12, w, h - 12, 12); g.fill(); g.strokeStyle = C.glassE; g.stroke();
+    g.fillStyle = C.metalD; g.beginPath(); g.roundRect(-w / 2 - 2, -h / 2 + 5, w + 4, 10, 4); g.fill();
+    g.fillStyle = C.metal; g.beginPath(); g.roundRect(-8, -h / 2, 16, 7, 3); g.fill();
+    g.strokeStyle = C.glassHi; g.beginPath(); g.moveTo(-w / 2 + 5, 0); g.lineTo(w / 2 - 5, 0); g.stroke();
+    g.fillStyle = 'rgba(95,147,201,.18)'; g.fillRect(-w / 2 + 7, 4, w - 14, h / 2 - 14);
+    lbl(g, it);
+  },
+  drying_tower(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.beginPath(); g.roundRect(-w / 2 + 3, -h / 2, w - 6, h, 6); glassFill(g);
+    g.fillStyle = 'rgba(95,147,201,.14)'; g.fillRect(-w / 2 + 6, -h / 2 + 8, w - 12, h - 24);
+    g.fillStyle = '#d4a542';
+    for (let i = 0; i < 24; i++) {
+      const x = ((i * 11) % 17) - 8, y = -h * .18 + ((i * 7) % 25);
+      g.beginPath(); g.arc(x, y, 2 + i % 2, 0, 7); g.fill();
+    }
+    g.strokeStyle = 'rgba(160,190,225,.55)'; g.lineWidth = 6; g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-w / 2 - 3, h * .33); g.lineTo(-w / 2 + 9, h * .33); g.lineTo(-w / 2 + 9, -h * .12);
+    g.moveTo(w / 2 + 3, -h * .33); g.lineTo(w / 2 - 9, -h * .33); g.lineTo(w / 2 - 9, h * .12); g.stroke();
+    g.strokeStyle = C.glassHi; g.lineWidth = 1.5; g.stroke(); g.lineWidth = 1; g.lineCap = 'butt';
+    g.fillStyle = C.metalD; g.beginPath(); g.roundRect(-w / 2 - 1, -h / 2 - 4, w + 2, 8, 3); g.fill();
+    lbl(g, it);
+  },
+  chromatography_column(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.beginPath(); g.roundRect(-w / 2 + 4, -h / 2, w - 8, h, 5); glassFill(g);
+    const bands = ['rgba(95,147,201,.4)', 'rgba(46,168,130,.4)', 'rgba(212,165,66,.45)'];
+    bands.forEach((col, i) => { g.fillStyle = col; g.fillRect(-w / 2 + 6, h * .05 + i * 9, w - 12, 5); });
+    g.fillStyle = 'rgba(234,228,210,.55)'; g.fillRect(-w / 2 + 6, h / 2 - 6, w - 12, 4);
+    lbl(g, it);
+  },
+  tlc_plate(g, it) {
+    const w = it.def.w, h = it.def.h;
+    g.fillStyle = 'rgba(234,228,210,.8)'; g.beginPath(); g.roundRect(-w / 2, -h / 2, w, h, 2); g.fill();
+    g.strokeStyle = '#8f74cf'; g.lineWidth = 1; g.beginPath(); g.moveTo(-w / 2 + 4, h * .22); g.lineTo(w / 2 - 4, h * .22); g.stroke();
+    g.fillStyle = '#6b5a86'; g.beginPath(); g.arc(0, h * .22, 3, 0, 7); g.fill();
+    g.fillStyle = 'rgba(95,147,201,.35)'; g.fillRect(-w / 2 + 4, -h * .25, w - 8, 3);
+  },
+  capillary(g, it) {
+    g.strokeStyle = C.glassHi; g.lineWidth = 2; g.beginPath(); g.moveTo(0, -it.def.h / 2); g.lineTo(0, it.def.h / 2); g.stroke();
+    g.fillStyle = '#d4a542'; g.beginPath(); g.arc(0, -it.def.h / 2 + 4, 2, 0, 7); g.fill();
+  },
+  brush(g, it) {
+    const h = it.def.h;
+    g.strokeStyle = C.metal; g.lineWidth = 4; g.beginPath(); g.moveTo(0, h / 2); g.lineTo(0, -h / 2 + 14); g.stroke();
+    g.strokeStyle = '#d8cfae'; g.lineWidth = 6;
+    for (let i = 0; i < 5; i++) { const x = (i - 2) * 2; g.beginPath(); g.moveTo(x, -h / 2 + 18); g.lineTo(x * 1.5, -h / 2); g.stroke(); }
+  },
+  boiling_chips(g, it) {
+    g.fillStyle = 'rgba(234,228,210,.9)'; g.strokeStyle = C.glassE;
+    for (const [x, y, r] of [[-8, 1, 5], [0, -4, 6], [8, 2, 5], [1, 6, 4], [-10, -5, 3]]) {
+      g.beginPath(); g.moveTo(x - r, y); g.lineTo(x - r / 2, y - r); g.lineTo(x + r, y - r / 2); g.lineTo(x + r / 2, y + r); g.lineTo(x - r, y + r / 2); g.closePath(); g.fill(); g.stroke();
+    }
+  },
+  pipette_filler(g, it) {
+    g.fillStyle = '#b0567a'; g.beginPath(); g.ellipse(0, 0, it.def.w / 2, it.def.h / 2, 0, 0, 7); g.fill();
+    g.strokeStyle = '#7a3f66'; g.lineWidth = 1; g.stroke();
+    g.fillStyle = C.metalD; g.beginPath(); g.ellipse(0, it.def.h / 2 - 1, 5, 4, 0, 0, 7); g.fill();
+  },
+  desiccant(g, it) {
+    g.fillStyle = '#d4a542';
+    for (let i = 0; i < 16; i++) { const x = (i * 13 % 23) - 11, y = (i * 7 % 15) - 7; g.beginPath(); g.arc(x, y, 2 + i % 2, 0, 7); g.fill(); }
   }
 };
