@@ -9,6 +9,10 @@ import { QUIZZES } from './data/quizzes.js';
 import { EXPERIMENTS, expById } from './experiments/index.js';
 import { renderNotebook } from './notebook.js';
 import { tutorReply, QUICK_TOPICS } from './tutor.js';
+import { CHEMICALS, CHEM_COUNT, chemById, chemSearch, ghsHTML } from './data/chemicals.js';
+import { APPARATUS_DEFS, APPARATUS_TREE } from './data/apparatus.js';
+import { hydrateChem, bulkHydrate } from './data/pubchem.js';
+import { makeQuiz5 } from './data/practice.js';
 
 const view = document.getElementById('view');
 let expCleanup = null;
@@ -140,6 +144,9 @@ function viewHome() {
         ['炼金图鉴', '符号解码器 + 术语库 + 实验速查，一站查阅', '#/glossary'],
         ['课程系统', `四线 ${s.total} 单元，每单元六层教学 + FAQ + 测验`, '#/learn'],
         ['虚拟实验室', `${Object.keys(EXPERIMENTS).length} 个实验：目标清单、步骤向导、拖拽操作与方程式横幅`, '#/lab'],
+        ['分层工作台', '制氧气工作台：分层引擎 + 步骤红绿灯 + 粒子现象（v3 试点）', '#/exp/o2lab'],
+        ['试剂库', `${CHEM_COUNT} 种化学品：GHS 危象、CAS/SMILES、储废规范（PubChem 补全）`, '#/chems'],
+        ['练习场', '器材辨识 · 操作纠错 · 定量计算，配置生成 5 题一练', '#/practice'],
         ['实验本', '自动记录数据，导出 CSV、打印报告', '#/notebook'],
         ['掌握地图', '按测验成绩着色的知识掌握热力图', '#/mastery'],
         ['术语闪卡', '翻卡复习核心概念，正反面问答式', '#/flashcards'],
@@ -311,10 +318,12 @@ function viewUnit(id) {
       ${done ? '<span class="badge green">已完成</span>' : ''}
     </div>
     <p class="muted">${u.subtitle}</p>
+    <div class="track-toggle" id="u-track" title="双轨解释：同一知识点，白话版听得懂，专业版写得全">
+      <button data-t="plain" class="on">🗣 白话版</button><button data-t="pro">🔬 专业版</button>
+    </div>
     <div class="section"><h3>历史现场</h3><div class="body">${u.story}</div></div>
-    <div class="section"><h3>生活现象</h3><div class="body">${u.life}</div></div>
-    <div class="section"><h3>科学原理</h3><div class="body">${u.principle}</div></div>
-    <div class="section"><h3>公式与推导</h3><div class="body">${u.formula}</div></div>
+    <div class="section"><h3>知识讲解（双轨）</h3><div class="body" id="u-dual"></div></div>
+    <div class="section" id="u-formula-sec"><h3>公式与推导（专业）</h3><div class="body">${u.formula}</div></div>
     <div class="section"><h3>虚拟实验</h3><div class="body">
       ${u.lab && u.lab.id ? `<p>${u.lab.note}</p><p><a class="btn primary" href="#/exp/${u.lab.id}">进入实验：${EXPERIMENTS[u.lab.id].title} →</a></p>` : `<p>${u.lab ? u.lab.note : ''}</p>`}
     </div></div>
@@ -329,6 +338,22 @@ function viewUnit(id) {
       ${next ? `<a class="btn ghost" href="#/unit/${next.id}">下一课：${next.title} →</a>` : ''}
     </div>`;
   enhanceGlossary(view);
+  // 双轨讲解：白话 = 生活现象文本，专业 = 科学原理文本；同一知识点两种讲法随时切换
+  const dual = view.querySelector('#u-dual');
+  const renderDual = mode => {
+    dual.innerHTML = mode === 'plain'
+      ? `<p class="dual-note">🗣 白话版：用身边的场景讲明白"为什么"。想看严谨表述和公式，切到 🔬 专业版。</p>${u.life}`
+      : `<p class="dual-note">🔬 专业版：规范术语 + 原理推导。白话场景见 🗣 白话版。</p>${u.principle}`;
+    enhanceGlossary(dual);
+    const fsec = view.querySelector('#u-formula-sec');
+    if (fsec) fsec.style.display = mode === 'plain' ? 'none' : '';
+  };
+  view.querySelectorAll('#u-track button').forEach(btn => btn.addEventListener('click', () => {
+    view.querySelectorAll('#u-track button').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    renderDual(btn.dataset.t);
+  }));
+  renderDual('plain');
   renderQuiz(view.querySelector('#quiz-box'), id);
   view.querySelector('#u-done').addEventListener('click', () => {
     if (store.isDone(id)) { store.unmarkDone(id); }
@@ -596,7 +621,10 @@ function viewGlossary() {
       <button data-t="sym" class="on">炼金符号（${SYMBOLS.length}）</button>
       <button data-t="term">核心术语（${terms.length}）</button>
       <button data-t="exp">实验速查（${Object.keys(EXPERIMENTS).length}）</button>
+      <button data-t="app">器材图鉴（${APPARATUS_DEFS.length}）</button>
+      <button data-t="chem">试剂图鉴（${CHEM_COUNT}）</button>
     </div>
+    <p class="muted" style="margin-top:8px">已解锁图鉴条目 <b>${store.codexCount()}</b> · 在虚拟实验里用过器材、打开过试剂详情就会点亮条目 ✦</p>
     <div id="g-body"></div>`;
   const body = view.querySelector('#g-body');
   const renderSym = () => {
@@ -621,13 +649,205 @@ function viewGlossary() {
       <div class="card"><h3 style="font-size:16px"><a href="#/exp/${e.id}">${e.title}</a></h3>
       <p>${e.oneLine}</p><p>${e.tags.map(t => `<span class="badge">${t}</span>`).join(' ')}</p></div>`).join('')}</div>`;
   };
-  const renderers = { sym: renderSym, term: renderTerm, exp: renderExp };
+  /* 器材图鉴：按分类树分组，未解锁条目暗显（点开详情即解锁） */
+  const renderApp = () => {
+    const seen = store.state.codexSeen;
+    const grp = Object.entries(APPARATUS_TREE).map(([cat, node]) => `
+      <div class="codex-cat"><h4>${node.name}</h4>
+        <div class="sym-grid">${Object.entries(node.children).map(([sub, sn]) => `
+          <div style="grid-column:1/-1;font-size:12px;color:var(--muted);margin-top:6px">${sn.name}</div>
+          ${(Array.isArray(sn.items) ? sn.items : Object.keys(sn.items)).map(id => {
+            const d = APPARATUS_DEFS.find(x => x.id === id);
+            if (!d) return '';
+            const on = !!seen['app:' + id];
+            return `<div class="sym-card app-card ${on ? 'unlocked' : ''}" data-id="${id}">
+              <div class="nm">${on ? '✦ ' : ''}${d.name}</div>
+              <div class="muted" style="font-size:11px">${d.en}${on ? '' : ' · 未解锁'}</div>
+            </div>`;
+          }).join('')}
+        `).join('')}</div>
+      </div>`).join('');
+    body.innerHTML = grp;
+    body.querySelectorAll('.app-card').forEach(card => card.addEventListener('click', () => {
+      const d = APPARATUS_DEFS.find(x => x.id === card.dataset.id);
+      if (!d) return;
+      store.seeCodex('app:' + d.id);
+      openModal(`<h3>${d.name} · ${d.en}${d.alias && d.alias.length ? '（' + d.alias.join('/') + '）' : ''}</h3>
+        <p>${(d.typical_uses || []).map(x => `<span class="badge">${x}</span>`).join(' ')}</p>
+        ${d.notes ? '<p><b>规范要点</b>：' + d.notes + '</p>' : ''}
+        <p class="muted">安全等级 ${d.safety_level || 1} / 3 · 建议学段 L${d.grade_level ?? 0}–L3</p>
+        <p style="margin-top:10px"><button class="btn small" onclick="document.getElementById('modal-root').innerHTML='';location.hash='#/glossary'">关闭</button></p>`);
+      body.innerHTML = ''; renderApp();
+    }));
+  };
+  /* 试剂图鉴：本地详情卡 → 试剂库详情页 */
+  const renderChem = () => {
+    const seen = store.state.codexSeen;
+    body.innerHTML = `<div class="sym-grid">${Object.values(CHEMICALS).map(c => {
+      const on = !!seen['chem:' + c.id];
+      return `<div class="sym-card app-card ${on ? 'unlocked' : ''}" data-id="${c.id}">
+        <div class="nm">${c.name}</div>
+        <div class="muted" style="font-size:11px">${c.formula}${on ? ' ✦' : ' · 未解锁'}</div>
+      </div>`;
+    }).join('')}</div>`;
+    body.querySelectorAll('.app-card').forEach(card => card.addEventListener('click', () => {
+      document.getElementById('modal-root').innerHTML = '';
+      location.hash = '#/chem/' + card.dataset.id;
+    }));
+  };
+  const renderers = { sym: renderSym, term: renderTerm, exp: renderExp, app: renderApp, chem: renderChem };
   view.querySelectorAll('#g-tabs button').forEach(btn => btn.addEventListener('click', () => {
     view.querySelectorAll('#g-tabs button').forEach(b => b.classList.remove('on'));
     btn.classList.add('on');
     renderers[btn.dataset.t]();
   }));
   renderSym();
+}
+
+/* ---------- v3: 试剂库 / 练习场 ---------- */
+
+function viewChems() {
+  let q = '';
+  const draw = () => {
+    const list = (q ? chemSearch(q) : Object.values(CHEMICALS));
+    view.querySelector('#ch-body').innerHTML = list.length ? `<div class="grid g3">${list.map(c => `
+      <div class="card chem-card"><a href="#/chem/${c.id}"><h3 style="font-size:16px">${c.name} <span class="muted" style="font-size:12px">${c.formula}</span></h3></a>
+        <p class="muted" style="font-size:13px">${c.en}${c.alias.length ? ' · ' + c.alias.slice(0, 2).join('/') : ''}</p>
+        <p style="font-size:13px">${(c.uses && c.uses[0]) || ''}</p>
+        <p>${c.ghs && c.ghs.pictos.length ? `<span class="badge red">GHS×${c.ghs.pictos.length}</span>` : '<span class="badge green">课堂安全品</span>'}
+        ${c.tags.slice(0, 3).map(t => `<span class="badge">${t}</span>`).join(' ')}</p>
+      </div>`).join('')}</div>`
+      : '<p class="panel">没有匹配的试剂，换个关键词试试。</p>';
+  };
+  view.innerHTML = `
+    <div class="crumb"><a href="#/home">首页</a> / 试剂库</div>
+    <h1>试剂库</h1>
+    <p class="muted">${CHEM_COUNT} 种常用化学品：CAS/SMILES/GHS 危象/储存与废液规范全收录；InChIKey 由 PubChem 自动补全（需联网，离线时显示本地数据）。</p>
+    <div class="chem-search"><input id="ch-q" type="search" placeholder="搜索：名称 / 英文 / 化学式 / 别名…" autocomplete="off"></div>
+    <div id="ch-body"></div>`;
+  view.querySelector('#ch-q').addEventListener('input', e => { q = e.target.value.trim(); draw(); });
+  draw();
+  bulkHydrate(CHEMICALS); // 错峰后台回填，静默降级
+}
+
+function viewChemDetail(id) {
+  const c = chemById(id);
+  if (!c) { view.innerHTML = '<div class="panel">试剂不存在。</div>'; return; }
+  store.seeCodex('chem:' + id);
+  const nSeen = Object.keys(store.state.codexSeen).filter(k => k.startsWith('chem:')).length;
+  if (nSeen >= 20) achieve('codex_chem');
+  const props = Object.entries({
+    密度: c.props.density, 熔点: c.props.mp, 沸点: c.props.bp,
+    溶解性: c.props.solubility, pH: c.props.ph,
+    腐蚀性: c.props.corrosive === undefined ? '—' : c.props.corrosive ? '有' : '无',
+    挥发性: c.props.volatile === undefined ? '—' : c.props.volatile ? '易挥发' : '一般'
+  }).map(([k, v]) => `<tr><th>${k}</th><td>${v === undefined ? '—' : v}</td></tr>`).join('');
+  view.innerHTML = `
+    <div class="crumb"><a href="#/home">首页</a> / <a href="#/chems">试剂库</a> / ${c.name}</div>
+    <div class="lesson-head"><h1>${c.name}</h1><span class="badge gold">${c.formula}</span><span class="badge">L${c.grade_level}+</span>
+      ${c.tags.map(t => `<span class="badge">${t}</span>`).join('')}</div>
+    <p class="muted">${c.en}${c.alias.length ? ' · 别名：' + c.alias.join('、') : ''}</p>
+    <div class="grid g2" style="margin:14px 0">
+      <div class="card"><h3>身份信息</h3>
+        <table class="stab-table"><tr><th>CAS 号</th><td>${c.cas || '—'}</td></tr>
+        <tr><th>分子量</th><td id="pc-mw">${c.mw || '—'}</td></tr>
+        <tr><th>SMILES</th><td style="word-break:break-all" id="pc-smi">${c.smiles || '—'}</td></tr>
+        <tr><th>InChIKey</th><td style="word-break:break-all" id="pc-ik">${c.inchikey || '<span id="pc-status">PubChem 补全中…（需联网）</span>'}</td></tr></table>
+        ${c.inchikey ? '' : '<p class="muted" style="font-size:12px">InChIKey 由 PubChem PUG-REST 按 CAS/名称查询回填，结果本地缓存。</p>'}
+      </div>
+      <div class="card"><h3>外观与性质</h3>
+        <p>${c.appearance}；${c.odor === '无气味' ? '无气味' : '气味：' + c.odor}</p>
+        <table class="stab-table">${props}</table>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:14px"><h3>⚠ GHS 危险性分类</h3>${ghsHTML(c)}
+      <p class="muted" style="font-size:12px;margin-top:8px">教学红线：本站只讲解性质与防护，不提供任何危险操作配方。</p></div>
+    <div class="grid g2" style="margin-bottom:14px">
+      <div class="card"><h3>用途与用量</h3><ul>${c.uses.map(x => `<li>${x}</li>`).join('')}</ul><p><b>典型用量</b>：${c.dosage || '—'}</p></div>
+      <div class="card"><h3>储存 / 溢洒 / 废液</h3>
+        <p><b>储存</b>：${c.storage || '—'}</p><p><b>溢洒处理</b>：${c.spill || '—'}</p><p><b>废液处理</b>：${c.waste || '—'}</p></div>
+    </div>
+    ${c.reactions.length ? `<div class="card" style="margin-bottom:14px"><h3>相关反应</h3><table class="stab-table">
+      <tr><th>方程式</th><th>备注</th></tr>${c.reactions.map(r => `<tr><td><code>${r.eq}</code></td><td>${r.note || ''}</td></tr>`).join('')}</table></div>` : ''}
+    ${c.teaching ? `<div class="safety"><h4>📌 教学要点</h4><p>${c.teaching}</p></div>` : ''}
+    <div class="exp-actions" style="margin:24px 0"><a class="btn ghost" href="#/chems">← 返回试剂库</a></div>`;
+  const onChem = e => {
+    if (e.detail !== id) return;
+    const ik = document.getElementById('pc-ik'), smi = document.getElementById('pc-smi'), mw = document.getElementById('pc-mw');
+    if (ik && c.inchikey) { ik.textContent = c.inchikey; smi.textContent = c.smiles || smi.textContent; mw.textContent = c.mw || mw.textContent; toast('PubChem 数据已补全'); }
+  };
+  window.addEventListener('alchemia:chem', onChem);
+  const cleanup = () => window.removeEventListener('alchemia:chem', onChem);
+  view.dataset.chemCleanup = '';
+  hydrateChem(c).then(src => {
+    const st = document.getElementById('pc-status');
+    if (src === 'offline' && st) st.textContent = '离线：未获取到 PubChem 数据（教学字段均为本地内容）';
+  });
+  if (!view.dataset.chemHooked) {
+    window.addEventListener('hashchange', () => cleanup(), { once: true });
+    view.dataset.chemHooked = '1';
+  }
+}
+
+function viewPractice() {
+  const MODES = ['mix', '识别', '纠错', '定量'];
+  const MODE_NAMES = { mix: '混合闯关', 识别: '器材试剂辨识', 纠错: '操作纠错', 定量: '定量计算' };
+  let mode = 'mix', items = [], i = 0, score = 0;
+  const draw = () => {
+    view.innerHTML = `
+      <div class="crumb"><a href="#/home">首页</a> / 练习场</div>
+      <h1>练习场</h1>
+      <p class="muted">辨识 · 纠错 · 定量三路练习，全部由器材库/试剂库/安全规范配置生成。已练 <b>${store.state.practiceSessions || 0}</b> 场。</p>
+      <div class="tabbar" id="p-modes">${MODES.map(m => `<button data-m="${m}" class="${m === mode ? 'on' : ''}">${MODE_NAMES[m]}</button>`).join('')}</div>
+      <div class="panel" id="p-body" style="margin-top:14px">
+        <p>每场 5 题：答对 1 题得 1 分。定量题答完会展示完整算式。</p>
+        <p><button class="btn primary" id="p-start">开始练习</button></p>
+      </div>`;
+    view.querySelectorAll('#p-modes button').forEach(b => b.addEventListener('click', () => {
+      mode = b.dataset.m; draw();
+    }));
+    view.querySelector('#p-start').addEventListener('click', start);
+    view.scrollTop = 0;
+  };
+  const start = () => {
+    items = makeQuiz5(mode); i = 0; score = 0;
+    const body = view.querySelector('#p-body');
+    const renderQ = () => {
+      const it = items[i];
+      body.innerHTML = `
+        <p class="muted">第 ${i + 1} / ${items.length} 题 · ${it.kind} · 当前得分 ${score}</p>
+        <h3 style="margin:8px 0">${it.q}</h3>
+        <div class="p-opts">${it.opts.map((o, k) => `<button class="p-opt" data-k="${k}">${String.fromCharCode(65 + k)}. ${o}</button>`).join('')}</div>
+        <div id="p-why"></div>`;
+      body.querySelectorAll('.p-opt').forEach(btn => btn.addEventListener('click', () => {
+        const k = +btn.dataset.k;
+        body.querySelectorAll('.p-opt').forEach(b => b.disabled = true);
+        const ok = k === it.answer;
+        if (ok) score++;
+        btn.classList.add(ok ? 'right' : 'wrong');
+        if (!ok) body.querySelectorAll('.p-opt')[it.answer].classList.add('right');
+        document.getElementById('p-why').innerHTML =
+          `<p class="${ok ? 'p-good' : 'p-bad'}">${ok ? '✓ 正确' : '✗ 正确答案：' + it.opts[it.answer]}</p><p class="muted">${it.why}</p>
+           <p style="margin-top:10px"><button class="btn primary" id="p-next">${i + 1 < items.length ? '下一题 →' : '查看成绩'}</button></p>`;
+        document.getElementById('p-next').addEventListener('click', () => { i++; i < items.length ? renderQ() : finish(); });
+      }));
+    };
+    renderQ();
+  };
+  const finish = () => {
+    const body = view.querySelector('#p-body');
+    const sessions = store.incPractice();
+    store.bumpDaily('practice');
+    if (sessions === 1) achieve('practice_first');
+    if (sessions === 10) achieve('practice_ten');
+    if (score === items.length) achieve('practice_ace');
+    body.innerHTML = `
+      <h3>${score === items.length ? '🎉 满分！' : score >= 3 ? '👍 不错！' : '💪 再练一场！'} 得分 ${score} / ${items.length}</h3>
+      <p class="muted">累计 ${sessions} 场。错题解析已逐题展示；定量题可回看算式。</p>
+      <p><button class="btn primary" id="p-again">再来一场</button> <a class="btn ghost" href="#/chems">去翻试剂库 →</a></p>`;
+    body.querySelector('#p-again').addEventListener('click', draw);
+  };
+  draw();
 }
 
 function viewFlashcards() {
@@ -768,6 +988,9 @@ function render() {
   else if (hash.startsWith('#/learn')) viewLearn();
   else if (hash.startsWith('#/unit/')) viewUnit(hash.slice(7).split('#')[0]);
   else if (hash.startsWith('#/lab')) viewLab();
+  else if (hash.startsWith('#/chem/')) viewChemDetail(hash.slice(7).split('?')[0]);
+  else if (hash.startsWith('#/chems')) viewChems();
+  else if (hash.startsWith('#/practice')) viewPractice();
   else if (hash.startsWith('#/exp/')) viewExp(hash.slice(6));
   else if (hash.startsWith('#/notebook')) renderNotebook(view);
   else if (hash.startsWith('#/mastery')) viewMastery();

@@ -326,3 +326,29 @@ mark{background:rgba(212,165,66,.3);color:var(--gold2);padding:0 2px;border-radi
 .stab-body .kit-goals{margin:0;padding-left:6px;list-style:none}
 .stab-body .kit-goals li{padding:3px 0}
 .muted{color:var(--muted)}
+
+/* ===== v3-P2：双轨解释 / 试剂库 / 练习场 / 图鉴解锁 ===== */
+.track-toggle{display:inline-flex;gap:4px;margin:6px 0 14px;padding:4px;background:var(--panel);
+  border:1px solid var(--line);border-radius:999px}
+.track-toggle button{background:none;border:none;color:var(--muted);font-size:13px;padding:6px 14px;
+  border-radius:999px;cursor:pointer;font-family:var(--sans)}
+.track-toggle button.on{color:var(--gold2);background:var(--panel2);box-shadow:inset 0 0 0 1px var(--gold)}
+.dual-note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--gold);padding-left:10px;margin-bottom:10px}
+.chem-search{margin:14px 0}
+.chem-search input{width:100%;max-width:480px;padding:10px 16px;background:var(--panel);
+  border:1px solid var(--line);border-radius:12px;color:var(--ink);font-size:14px;font-family:var(--sans)}
+.chem-search input:focus{outline:none;border-color:var(--gold)}
+.grid.g3{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.app-card{opacity:.55;cursor:pointer;transition:opacity .25s}
+.app-card.unlocked{opacity:1;border-color:rgba(212,165,66,.55)}
+.app-card:hover{opacity:1}
+.codex-cat{margin-bottom:18px}
+.codex-cat h4{color:var(--gold2);margin:14px 0 4px;font-size:15px}
+.p-opts{display:grid;gap:10px;margin:12px 0}
+.p-opt{width:100%;text-align:left;padding:12px 16px;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;color:var(--ink);font-size:14px;cursor:pointer;font-family:var(--sans)}
+.p-opt:hover:not(:disabled){border-color:var(--gold)}
+.p-opt.right{border-color:var(--emerald);background:rgba(46,168,130,.1)}
+.p-opt.wrong{border-color:var(--red);background:rgba(198,90,65,.12)}
+.p-good{color:var(--emerald);font-weight:600}
+.p-bad{color:var(--red);font-weight:600}

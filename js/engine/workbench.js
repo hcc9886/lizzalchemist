@@ -86,6 +86,7 @@ export class Workbench {
     if (opt.liq) it.liq = { vol: opt.liq.vol || 0, color: opt.liq.color || '#3f7fb5', max: opt.cap ?? e.cap ?? 100, wave: 0, vortex: 0 };
     if (opt.powder) it.powder = { ...opt.powder };
     this.items.push(it);
+    if (this.on.touch) this.on.touch(it);
     this.on.place && this.on.place(it, opt);
     return it;
   }

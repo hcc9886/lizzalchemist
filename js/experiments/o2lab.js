@@ -4,7 +4,7 @@ import { Workbench } from '../engine/workbench.js';
 import { createExpUI } from '../engine/panel.js';
 import { createProcedure, logReportHTML } from '../engine/fsm.js';
 import { achieve } from '../expkit.js';
-import { openModal } from '../progress.js';
+import { openModal, store } from '../progress.js';
 
 let raf = null, state = null, bench = null, ui = null, proc = null, ctxRef = null, t0 = 0, tLast = 0;
 const WATER = '#3f7fb5';
@@ -127,6 +127,7 @@ export default {
     state.stand = stand; state.kmno4 = kmno4;
 
     proc = createProcedure({ steps: STEPS, guard: guard });
+    bench.on.touch = it => store.seeCodex('app:' + it.def.id);
     ui.mountBottom();
 
     /* ————— 红绿灯全局护栏 ————— */

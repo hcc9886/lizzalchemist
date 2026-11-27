@@ -11,6 +11,8 @@ const DEFAULT = {
   achievements: {},         // achId -> ts
   expsVisited: {},          // expId -> true
   flashSeen: {},            // glossKey -> ts
+  codexSeen: {},            // 'app:test_tube' | 'chem:nacl' -> ts（图鉴解锁）
+  practiceSessions: 0,      // 练习场次
   daily: {}                 // 'Y-M-D' -> {lesson, exp, flash}
 };
 
@@ -103,6 +105,20 @@ export const store = {
     }
   },
   flashCount() { return Object.keys(this.state.flashSeen).length; },
+
+  seeCodex(key) {
+    if (!this.state.codexSeen[key]) {
+      this.state.codexSeen[key] = Date.now();
+      this.save();
+    }
+  },
+  codexCount() { return Object.keys(this.state.codexSeen).length; },
+
+  incPractice() {
+    this.state.practiceSessions = (this.state.practiceSessions || 0) + 1;
+    this.save();
+    return this.state.practiceSessions;
+  },
 
   dailyKey() {
     const d = new Date();

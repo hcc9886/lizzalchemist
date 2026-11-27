@@ -25,7 +25,11 @@ export const ACHIEVEMENTS = [
   { id: 'distill_pure',  icon: '☼', name: '蒸馏大师',     desc: '馏出液乙醇纯度 ≥ 85%' },
   { id: 'sandbox_first', icon: '☪', name: '混合初体验',   desc: '在沙盒混合台完成 3 种不同反应' },
   { id: 'o2_master',     icon: '✺', name: '制氧大师',     desc: '在分层工作台安全完成高锰酸钾制氧气全流程（气密性→装药→加热→收集→验满→先撤导管后熄灯）' },
-  { id: 'safety_perfect', icon: '✵', name: '零事故安全员', desc: '制氧气实验全程零红灯拦截完成' }
+  { id: 'safety_perfect', icon: '✵', name: '零事故安全员', desc: '制氧气实验全程零红灯拦截完成' },
+  { id: 'practice_first', icon: '✜', name: '练习初成',    desc: '完成第一场练习（辨识/纠错/定量）' },
+  { id: 'practice_ace',  icon: '✪', name: '五题全对',    desc: '一场练习 5 题全对' },
+  { id: 'practice_ten',  icon: '✫', name: '题场常客',    desc: '累计完成 10 场练习' },
+  { id: 'codex_chem',    icon: '⚗', name: '试剂百科',    desc: '解锁 20 种试剂的图鉴条目' }
 ];
 
 export function achById(id) {

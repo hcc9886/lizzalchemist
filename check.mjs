@@ -98,6 +98,29 @@ for (const [k, v] of Object.entries(CHEMICALS)) {
   for (const r of (v.reactions || [])) if (!r.eq) errors.push('化学品反应缺方程式: ' + k);
 }
 
+// 11) 练习系统（辨识/纠错/定量）
+import { makeQuiz5, ERROR_BANK, identifyApparatus, identifyChem, quantQuiz } from './js/data/practice.js';
+for (const [i, q] of ERROR_BANK.entries()) {
+  if (!q.q || !Array.isArray(q.opts) || q.opts.length !== 4 || !q.why) errors.push(`纠错题库第 ${i + 1} 题结构不完整`);
+  if (!(q.answer >= 0 && q.answer <= 3)) errors.push(`纠错题库第 ${i + 1} 题答案索引越界`);
+}
+for (const mode of ['mix', '识别', '纠错', '定量']) {
+  const qs = makeQuiz5(mode);
+  if (qs.length !== 5) errors.push(`练习模式 ${mode} 不是 5 题`);
+  qs.forEach((q, i) => {
+    if (!q.q || !Array.isArray(q.opts) || q.opts.length !== 4 || !q.why) errors.push(`练习 ${mode} 第 ${i + 1} 题结构不完整`);
+    if (!(q.answer >= 0 && q.answer <= 3)) errors.push(`练习 ${mode} 第 ${i + 1} 题答案索引越界`);
+    if (q.opts.some(o => o === undefined || o === null || o === '')) errors.push(`练习 ${mode} 第 ${i + 1} 题有空选项`);
+  });
+}
+// 生成器抽查：正确答案文本必须出现在选项里
+for (const g of [identifyApparatus, identifyChem, quantQuiz]) {
+  for (let t = 0; t < 20; t++) {
+    const q = g();
+    if (!q.opts[q.answer].trim()) errors.push('生成器答案选项为空: ' + q.q.slice(0, 12));
+  }
+}
+
 if (errors.length) {
   console.error('FAIL\n' + errors.join('\n'));
   process.exit(1);
