@@ -2,7 +2,7 @@
 import { GLOSSARY } from './js/data/glossary.js';
 import { TIMELINE } from './js/data/timeline.js';
 import { SYMBOLS } from './js/data/symbols.js';
-import { TRACKS, ALL_UNITS, unitById } from './js/data/curriculum.js';
+import { TRACKS, ALL_UNITS, LEVELS, unitById, unitLevel } from './js/data/curriculum.js';
 import { QUIZZES } from './js/data/quizzes.js';
 import { EXPERIMENTS } from './js/experiments/index.js';
 
@@ -121,6 +121,48 @@ for (const g of [identifyApparatus, identifyChem, quantQuiz]) {
   }
 }
 
+// 12) L0–L3 分层与入门诊断
+import { DIAGNOSTIC_QUESTIONS, scoreDiagnostic } from './js/data/diagnostic.js';
+if (LEVELS.length !== 4 || LEVELS.some((l, i) => l.id !== i || !l.code || !l.name || !l.desc)) errors.push('课程层级定义不完整');
+const levelIds = LEVELS.flatMap(l => l.unitIds);
+if (new Set(levelIds).size !== levelIds.length) errors.push('课程单元被重复分配到多个层级');
+if (levelIds.length !== ALL_UNITS.length || ALL_UNITS.some(u => !levelIds.includes(u.id))) errors.push('课程层级未覆盖全部单元');
+for (const l of LEVELS) {
+  if (!l.unitIds.length) errors.push('课程层级没有单元: ' + l.code);
+  for (const id of l.unitIds) {
+    if (!unitById(id)) errors.push('课程层级引用不存在单元: ' + l.code + '/' + id);
+    else if (unitLevel(id).id !== l.id) errors.push('课程层级归属错误: ' + id);
+  }
+}
+if (DIAGNOSTIC_QUESTIONS.length !== 12) errors.push('入门诊断不是 12 题');
+if (new Set(DIAGNOSTIC_QUESTIONS.map(q => q.id)).size !== DIAGNOSTIC_QUESTIONS.length) errors.push('诊断题 ID 有重复');
+for (const l of LEVELS) {
+  const qs = DIAGNOSTIC_QUESTIONS.filter(q => q.level === l.id);
+  if (qs.length !== 3) errors.push(`${l.code} 诊断题不是 3 题`);
+}
+for (const [i, q] of DIAGNOSTIC_QUESTIONS.entries()) {
+  if (!q.q || !Array.isArray(q.opts) || q.opts.length !== 4 || !q.e || !q.skill) errors.push(`诊断第 ${i + 1} 题结构不完整`);
+  if (!(q.a >= 0 && q.a < q.opts.length)) errors.push(`诊断第 ${i + 1} 题答案索引越界`);
+  if (q.opts.some(o => o === undefined || o === null || o === '')) errors.push(`诊断第 ${i + 1} 题有空选项`);
+  const ul = unitLevel(q.unitId);
+  if (!ul || ul.id !== q.level) errors.push(`诊断第 ${i + 1} 题层级归属错误`);
+  const source = QUIZZES[q.unitId] && QUIZZES[q.unitId].find(x => x.q === q.q);
+  if (!source || source.a !== q.a || source.e !== q.e || JSON.stringify(source.opts) !== JSON.stringify(q.opts)) errors.push(`诊断第 ${i + 1} 题与课程题库不一致`);
+}
+const rightAnswers = DIAGNOSTIC_QUESTIONS.map(q => q.a);
+const wrongAnswers = DIAGNOSTIC_QUESTIONS.map(q => (q.a + 1) % q.opts.length);
+if (scoreDiagnostic(rightAnswers).recommendedLevel !== 3) errors.push('全对诊断未推荐 L3');
+if (scoreDiagnostic(wrongAnswers).recommendedLevel !== 0) errors.push('全错诊断未推荐 L0');
+for (let target = 1; target <= 3; target++) {
+  const answers = wrongAnswers.slice();
+  for (let level = 0; level < target; level++) {
+    DIAGNOSTIC_QUESTIONS.forEach((q, i) => { if (q.level === level && answers.filter((_, j) => DIAGNOSTIC_QUESTIONS[j].level === level && answers[j] === DIAGNOSTIC_QUESTIONS[j].a).length < 2) answers[i] = q.a; });
+  }
+  if (scoreDiagnostic(answers).recommendedLevel !== target) errors.push(`诊断门槛推荐错误: 应为 L${target}`);
+}
+try { scoreDiagnostic(rightAnswers.slice(1)); errors.push('诊断接受了不完整答案'); } catch (e) { /* expected */ }
+try { scoreDiagnostic(Array(DIAGNOSTIC_QUESTIONS.length).fill(null)); errors.push('诊断接受了空答案'); } catch (e) { /* expected */ }
+
 if (errors.length) {
   console.error('FAIL\n' + errors.join('\n'));
   process.exit(1);
@@ -133,5 +175,7 @@ if (errors.length) {
     CHEM_COUNT + ' chemicals, ' +
     TIMELINE.length + ' timeline stages, ' +
     SYMBOLS.length + ' symbols, ' +
-    Object.keys(GLOSSARY).length + ' glossary terms');
+    Object.keys(GLOSSARY).length + ' glossary terms, ' +
+    LEVELS.length + ' levels, ' +
+    DIAGNOSTIC_QUESTIONS.length + ' diagnostic questions');
 }

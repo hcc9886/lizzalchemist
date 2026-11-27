@@ -6,6 +6,7 @@ try { // 品牌改名迁移：旧 alchemia 存档搬到新键
 
 const DEFAULT = {
   persona: null,            // 'zero' | 'middle' | 'college' | 'adult' | 'teacher'
+  diagnostic: null,         // {version, recommendedLevel, correct, total, scores, ts}
   lessonsDone: {},          // unitId -> true
   quiz: {},                 // unitId -> {best, ts}
   notebook: [],             // [{ts, exp, title, params, results}]
@@ -42,6 +43,11 @@ export const store = {
   },
 
   setPersona(p) { this.state.persona = p; this.save(); },
+
+  setDiagnostic(result) {
+    this.state.diagnostic = Object.assign({ ts: Date.now() }, result);
+    this.save();
+  },
 
   visit(id) { this.state.visited[id] = true; this.save(); },
   isVisited(id) { return !!this.state.visited[id]; },

@@ -4,8 +4,9 @@ import { ACHIEVEMENTS, achById } from './data/achievements.js';
 import { GLOSSARY } from './data/glossary.js';
 import { TIMELINE } from './data/timeline.js';
 import { SYMBOLS } from './data/symbols.js';
-import { TRACKS, ALL_UNITS, unitById, trackOf, nextUnit, prevUnit, PERSONA_RECOMMEND } from './data/curriculum.js';
+import { TRACKS, ALL_UNITS, LEVELS, unitById, trackOf, nextUnit, prevUnit, PERSONA_RECOMMEND, levelById, unitsAtLevel, unitLevel } from './data/curriculum.js';
 import { QUIZZES } from './data/quizzes.js';
+import { DIAGNOSTIC_QUESTIONS, scoreDiagnostic } from './data/diagnostic.js';
 import { EXPERIMENTS, expById } from './experiments/index.js';
 import { renderNotebook } from './notebook.js';
 import { tutorReply, QUICK_TOPICS } from './tutor.js';
@@ -56,10 +57,36 @@ function scoreOf(unitId) {
   return 0;
 }
 
+function currentDiagnostic() {
+  const d = store.state.diagnostic;
+  if (!d || d.version !== 1 || !Array.isArray(d.answers) || d.answers.length !== DIAGNOSTIC_QUESTIONS.length) return null;
+  try {
+    return Object.assign({}, d, scoreDiagnostic(d.answers), { ts: Number.isFinite(d.ts) ? d.ts : null });
+  } catch (e) {
+    return null;
+  }
+}
+
+function learningRecommendation() {
+  const diagnostic = currentDiagnostic();
+  if (diagnostic) {
+    const level = levelById(diagnostic.recommendedLevel);
+    const units = unitsAtLevel(level.id);
+    const unit = units.find(u => !store.isDone(u.id)) || units[0];
+    return { level, track: trackOf(unit), unit, diagnostic };
+  }
+  const track = TRACKS.find(t => t.id === PERSONA_RECOMMEND[store.state.persona]) || TRACKS[0];
+  return { level: null, track, unit: track.units.find(u => !store.isDone(u.id)) || track.units[0], diagnostic: null };
+}
+
+function levelRoute(levelId) {
+  return '#/learn?level=' + levelId;
+}
+
 /* ---------- onboarding ---------- */
 
-function maybeOnboarding() {
-  if (store.state.persona) return;
+function maybeOnboarding(force = false) {
+  if (!force && (store.state.persona || currentDiagnostic())) return;
   openModal(`
     <h3>欢迎来到 LizzAlchemist</h3>
     <p class="muted">从人类与火，到原子与分子——这里是一条从零基础到精通的炼金术与化学之路。先告诉我们你是谁，好为你推荐路线（之后随时可换）：</p>
@@ -70,13 +97,18 @@ function maybeOnboarding() {
       <button data-p="adult"><b>成人爱好者</b><span>材料、环境、能源、药物 + 完整科研课题</span></button>
       <button data-p="teacher"><b>教师</b><span>布置任务、管理班级、生成作业单</span></button>
       <button data-p="zero"><b>随便看看</b><span>从时间轴和实验室开始逛起</span></button>
-    </div>`);
+    </div>
+    <p style="margin-top:16px"><button class="btn ghost" id="onboard-diagnostic">先做 12 题入门诊断，找到合适起点</button></p>`);
   document.querySelectorAll('[data-p]').forEach(btn => btn.addEventListener('click', () => {
     store.setPersona(btn.dataset.p);
     closeModal();
     toast('路线已设定：' + btn.querySelector('b').textContent);
     render();
   }));
+  document.getElementById('onboard-diagnostic').addEventListener('click', () => {
+    closeModal();
+    location.hash = '#/diagnostic';
+  });
 }
 
 /* ---------- views ---------- */
@@ -84,9 +116,8 @@ function maybeOnboarding() {
 function viewHome() {
   const s = stats();
   const persona = store.state.persona;
-  const rec = persona ? PERSONA_RECOMMEND[persona] : 'a';
-  const track = TRACKS.find(t => t.id === rec);
-  const nextLesson = track.units.find(u => !store.isDone(u.id)) || track.units[0];
+  const recommendation = learningRecommendation();
+  const { track, unit: nextLesson, level, diagnostic } = recommendation;
   const pct = Math.round(s.done / s.total * 100);
   const achN = Object.keys(store.state.achievements || {}).length;
   const daily = store.dailyOf();
@@ -102,10 +133,11 @@ function viewHome() {
       <p class="lead">沿着化学与炼金术的起源学习：历史时间轴、${s.total} 个详细课程单元、${Object.keys(EXPERIMENTS).length} 个带目标挑战的虚拟实验、成就徽章与实验本。炼金术作为历史文化，化学作为可验证科学——零基础也能一路学到精通。</p>
       <div class="hero-actions">
         <a class="btn primary" href="#/unit/${nextLesson.id}">继续学习：${nextLesson.title}</a>
+        <a class="btn" href="${diagnostic ? levelRoute(level.id) : '#/diagnostic'}">${diagnostic ? '查看推荐层级：' + level.code : '测测我的化学起点'}</a>
         <a class="btn" href="#/timeline">从起源时间轴开始</a>
         <a class="btn ghost" href="#/lab">直接进虚拟实验室</a>
         <button class="btn ghost" id="home-search">🔍 全站搜索</button>
-        ${persona ? `<button class="btn ghost" id="re-persona">身份：${({ zero: '零基础探索者', middle: '中学生', college: '大学生/进阶者', adult: '成人爱好者', teacher: '教师' }[persona])}（更换）</button>` : ''}
+        ${persona ? `<button class="btn ghost" id="re-persona">身份：${({ zero: '零基础探索者', middle: '中学生', college: '大学生/进阶者', adult: '成人爱好者', teacher: '教师' }[persona])}（更换）</button>` : diagnostic ? '<button class="btn ghost" id="re-persona">选择学习身份</button>' : ''}
       </div>
     </div>
     <div class="grid g4" style="margin:26px 0">
@@ -131,9 +163,10 @@ function viewHome() {
       ${dailyItems.map(([k, t, done, d]) => `<div class="daily-item ${done ? 'done' : ''}"><b>${done ? '✓ ' : '○ '}${t}</b>${d}</div>`).join('')}
     </div>
     <h2 style="margin:26px 0 10px">学习路线</h2>
+    ${diagnostic ? `<div class="panel gold"><h3>你的诊断起点：${level.code} · ${level.name}</h3><p>${level.desc} 诊断结果已保存，可跨设备同步；这只是起点建议，不限制你浏览任何课程。</p><p><a class="btn small primary" href="${levelRoute(level.id)}">进入 ${level.code} 层级</a> <a class="btn small" href="#/diagnostic">查看 / 重测</a></p></div>` : ''}
     <div class="grid g4">
-      ${TRACKS.map(t => `<div class="card" style="${t.id === rec ? 'border-color:var(--gold)' : ''}">
-        <span class="badge ${t.id === rec ? 'gold' : ''}">${t.units.length} 单元</span>
+      ${TRACKS.map(t => `<div class="card" style="${t.id === track.id ? 'border-color:var(--gold)' : ''}">
+        <span class="badge ${t.id === track.id ? 'gold' : ''}">${t.units.length} 单元</span>
         <h3 style="margin-top:8px">${t.name}</h3><p>${t.desc}</p>
         <p style="margin-top:10px"><a class="btn small" href="#/learn#${t.id}">进入 ${t.name.split('·')[0].trim()}</a></p>
       </div>`).join('')}
@@ -163,7 +196,7 @@ function viewHome() {
   const reP = view.querySelector('#re-persona');
   if (reP) reP.addEventListener('click', () => {
     store.setPersona(null);
-    maybeOnboarding();
+    maybeOnboarding(true);
   });
   view.querySelector('#home-search').addEventListener('click', openSearch);
   maybeOnboarding();
@@ -223,43 +256,195 @@ function viewSymbols() {
 
 function viewLearn() {
   const hash = location.hash;
-  const activeTrack = hash.includes('#') && hash.split('#')[1] ? hash.split('#')[1] : (store.state.persona ? PERSONA_RECOMMEND[store.state.persona] : 'a');
+  const trackMatch = hash.match(/^#\/learn#([^?]+)/);
+  const trackPart = trackMatch ? trackMatch[1] : '';
+  const queryIndex = hash.indexOf('?');
+  const params = new URLSearchParams(queryIndex >= 0 ? hash.slice(queryIndex + 1) : '');
+  const diagnostic = currentDiagnostic();
+  const requestedTrack = TRACKS.find(t => t.id === trackPart);
+  const activeTrack = requestedTrack || (diagnostic ? trackOf(unitsAtLevel(diagnostic.recommendedLevel)[0]) : TRACKS.find(t => t.id === PERSONA_RECOMMEND[store.state.persona])) || TRACKS[0];
+  const requestedLevel = params.has('level') ? levelById(params.get('level')) : null;
+  const activeLevel = params.has('level') ? (requestedLevel ? requestedLevel.id : null) : (!trackPart && diagnostic ? diagnostic.recommendedLevel : null);
   view.innerHTML = `
     <div class="crumb"><a href="#/home">首页</a> / 课程</div>
     <h1>课程：从零基础到精通</h1>
-    <p class="muted">四条路线覆盖中学生、大学生、成人爱好者与教师。每单元六层教学：历史现场 → 生活现象 → 科学原理 → 公式推导 → 虚拟实验 → 综合挑战。</p>
+    <p class="muted">四条主题路线覆盖历史、中学、大学与应用；L0–L3 是跨路线的能力层级。每单元六层教学：历史现场 → 生活现象 → 科学原理 → 公式推导 → 虚拟实验 → 综合挑战。</p>
     <div class="exp-actions" style="margin:16px 0">
-      ${TRACKS.map(t => `<button class="btn ${t.id === activeTrack ? 'primary' : ''}" data-track="${t.id}">${t.name}</button>`).join('')}
+      <a class="btn ${diagnostic ? '' : 'primary'}" href="#/diagnostic">${diagnostic ? '查看入门诊断' : '先做入门诊断'}</a>
+      ${diagnostic ? `<span class="badge gold">推荐 ${levelById(diagnostic.recommendedLevel).code} · ${levelById(diagnostic.recommendedLevel).name}</span>` : ''}
+    </div>
+    <h2 style="margin:24px 0 10px">能力层级</h2>
+    <div class="level-map">
+      ${LEVELS.map(l => {
+        const units = unitsAtLevel(l.id);
+        const done = units.filter(u => store.isDone(u.id)).length;
+        return `<button class="level-card ${activeLevel === l.id ? 'active' : ''}" data-level="${l.id}">
+          <span class="level-code">${l.code}</span><b>${l.name}</b><span>${done}/${units.length} 单元</span>
+          <p>${l.desc}</p>${diagnostic && diagnostic.recommendedLevel === l.id ? '<em>诊断推荐起点</em>' : ''}
+        </button>`;
+      }).join('')}
+    </div>
+    <div class="exp-actions level-filter" style="margin:16px 0">
+      <button class="btn ${activeLevel === null ? 'primary' : ''}" data-level="all">全部层级</button>
+      ${LEVELS.map(l => `<button class="btn ${activeLevel === l.id ? 'primary' : ''}" data-level="${l.id}">${l.code} ${l.name}</button>`).join('')}
+    </div>
+    <div class="exp-actions" style="margin:16px 0">
+      ${TRACKS.map(t => `<button class="btn ${activeLevel === null && t.id === activeTrack.id ? 'primary' : ''}" data-track="${t.id}">${t.name}</button>`).join('')}
     </div>
     <div id="track-units"></div>`;
   const container = view.querySelector('#track-units');
-  const renderTrack = tid => {
-    const t = TRACKS.find(x => x.id === tid);
-    container.innerHTML = `<div class="panel gold"><h3>${t.name}</h3><p>${t.desc}</p></div>
+  const renderUnits = () => {
+    const level = activeLevel === null ? null : levelById(activeLevel);
+    const units = level ? unitsAtLevel(level.id) : activeTrack.units;
+    const title = level ? level.code + ' · ' + level.name : activeTrack.name;
+    const desc = level ? level.desc + '（跨四条主题路线）' : activeTrack.desc;
+    container.innerHTML = `<div class="panel gold"><h3>${title}</h3><p>${desc}</p></div>
       <div class="grid g2">
-      ${t.units.map(u => {
+      ${units.map(u => {
         const sc = scoreOf(u.id);
         const done = store.isDone(u.id);
+        const ul = unitLevel(u), ut = trackOf(u);
         return `<div class="card">
-          <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap">
             <span class="badge ${done ? 'green' : sc > 0 ? 'gold' : ''}">${done ? '已完成' : sc > 0 ? '进行中' : '未开始'}</span>
+            <span class="badge blue">${ul.code} ${ul.name}</span>
             ${store.quizOf(u.id) ? `<span class="badge blue">测验 ${sc} 分</span>` : ''}
             <span class="badge">${u.minutes} 分钟</span>
           </div>
           <h3><a href="#/unit/${u.id}">${u.title}</a></h3>
-          <p>${u.subtitle}</p>
+          <p>${u.subtitle}</p><p class="muted" style="font-size:12px">${ut.name}</p>
           <div class="bar"><i style="width:${sc}%"></i></div>
         </div>`;
       }).join('')}
       </div>`;
   };
   view.querySelectorAll('[data-track]').forEach(btn => btn.addEventListener('click', () => {
-    view.querySelectorAll('[data-track]').forEach(b => b.classList.remove('primary'));
-    btn.classList.add('primary');
-    renderTrack(btn.dataset.track);
-    location.hash = '#/learn#' + btn.dataset.track;
+    location.hash = '#/learn#' + btn.dataset.track + '?level=all';
   }));
-  renderTrack(activeTrack);
+  view.querySelectorAll('.level-filter [data-level]').forEach(btn => btn.addEventListener('click', () => {
+    location.hash = btn.dataset.level === 'all' ? '#/learn#' + activeTrack.id + '?level=all' : levelRoute(+btn.dataset.level);
+  }));
+  view.querySelectorAll('.level-map [data-level]').forEach(btn => btn.addEventListener('click', () => {
+    location.hash = levelRoute(+btn.dataset.level);
+  }));
+  renderUnits();
+}
+
+function viewDiagnostic() {
+  const saved = currentDiagnostic();
+  let answers = Array(DIAGNOSTIC_QUESTIONS.length).fill(null);
+  let index = 0;
+
+  const renderIntro = () => {
+    const level = saved ? levelById(saved.recommendedLevel) : null;
+    view.innerHTML = `
+      <div class="crumb"><a href="#/home">首页</a> / 入门诊断</div>
+      <h1>找到你的化学起点</h1>
+      <p class="muted">12 道题，约 5 分钟。题目覆盖 L0–L3 四个层级，用于推荐起点，不是考试，也不限制你选课。</p>
+      <div class="level-map diagnostic-levels">
+        ${LEVELS.map(l => `<div class="level-card"><span class="level-code">${l.code}</span><b>${l.name}</b><span>3 道诊断题</span><p>${l.desc}</p></div>`).join('')}
+      </div>
+      <div class="panel gold">
+        <h3>诊断如何推荐</h3>
+        <p>每个层级 3 题：L0–L2 答对至少 2 题，视为可以尝试下一层级；L3 答对至少 2 题，视为已展现研究与应用基础。系统从 L0 逐级检查，推荐第一个尚未稳固掌握的层级。结果会保存在本机，并随账号云同步。</p>
+        ${saved ? `<p><b>上次结果：${level.code} · ${level.name}</b>，答对 ${saved.correct}/${saved.total} 题${saved.ts ? ' · ' + new Date(saved.ts).toLocaleDateString('zh-CN') : ''}。</p>` : ''}
+        <div class="exp-actions">
+          <button class="btn primary" id="diag-start">${saved ? '重新诊断' : '开始诊断'}</button>
+          ${saved ? `<button class="btn" id="diag-saved">查看上次结果</button><a class="btn ghost" href="${levelRoute(level.id)}">进入推荐层级</a>` : '<a class="btn ghost" href="#/learn">先浏览课程</a>'}
+        </div>
+      </div>`;
+    view.querySelector('#diag-start').addEventListener('click', () => {
+      answers = Array(DIAGNOSTIC_QUESTIONS.length).fill(null);
+      index = 0;
+      renderQuestion();
+    });
+    const prev = view.querySelector('#diag-saved');
+    if (prev) prev.addEventListener('click', () => renderResult(saved));
+  };
+
+  const renderQuestion = () => {
+    const q = DIAGNOSTIC_QUESTIONS[index];
+    const level = levelById(q.level);
+    const answered = answers.filter(a => a !== null).length;
+    view.innerHTML = `
+      <div class="crumb"><a href="#/home">首页</a> / 入门诊断</div>
+      <div class="diag-status"><span>第 ${index + 1} / ${DIAGNOSTIC_QUESTIONS.length} 题</span><span>已作答 ${answered} 题</span></div>
+      <div class="bar diag-progress"><i style="width:${answered / DIAGNOSTIC_QUESTIONS.length * 100}%"></i></div>
+      <section class="panel diag-question" id="diag-question" tabindex="-1">
+        <div class="exp-actions"><span class="badge blue">${level.code} · ${level.name}</span><span class="badge">${q.skill}</span></div>
+        <h2>${q.q}</h2>
+        <div class="diag-options">
+          ${q.opts.map((o, oi) => `<button class="diag-option ${answers[index] === oi ? 'selected' : ''}" data-option="${oi}" aria-pressed="${answers[index] === oi}">${String.fromCharCode(65 + oi)}. ${o}</button>`).join('')}
+        </div>
+        <div class="exp-actions" style="margin-top:22px">
+          <button class="btn ghost" id="diag-prev" ${index === 0 ? 'disabled' : ''}>上一题</button>
+          <button class="btn primary" id="diag-next" ${answers[index] === null ? 'disabled' : ''}>${index === DIAGNOSTIC_QUESTIONS.length - 1 ? '完成诊断' : '下一题'}</button>
+        </div>
+      </section>
+      <p class="muted" style="font-size:13px">答题时不显示对错，完成后统一查看解析；可以返回修改已作答的题目。</p>`;
+    view.querySelectorAll('[data-option]').forEach(btn => btn.addEventListener('click', () => {
+      answers[index] = +btn.dataset.option;
+      view.querySelectorAll('[data-option]').forEach(b => {
+        const selected = b === btn;
+        b.classList.toggle('selected', selected);
+        b.setAttribute('aria-pressed', String(selected));
+      });
+      view.querySelector('#diag-next').disabled = false;
+      view.querySelector('.diag-status span:last-child').textContent = '已作答 ' + answers.filter(a => a !== null).length + ' 题';
+      view.querySelector('.diag-progress i').style.width = answers.filter(a => a !== null).length / DIAGNOSTIC_QUESTIONS.length * 100 + '%';
+    }));
+    view.querySelector('#diag-prev').addEventListener('click', () => { if (index > 0) { index--; renderQuestion(); } });
+    view.querySelector('#diag-next').addEventListener('click', () => {
+      if (answers[index] === null) return;
+      if (index < DIAGNOSTIC_QUESTIONS.length - 1) { index++; renderQuestion(); }
+      else {
+        const result = scoreDiagnostic(answers);
+        store.setDiagnostic(result);
+        renderResult(Object.assign({}, result, { ts: store.state.diagnostic.ts }));
+      }
+    });
+    view.scrollTop = 0;
+    window.scrollTo(0, 0);
+    const heading = view.querySelector('#diag-question');
+    if (heading) heading.focus({ preventScroll: true });
+  };
+
+  const renderResult = result => {
+    const level = levelById(result.recommendedLevel);
+    const units = unitsAtLevel(level.id);
+    const first = units.find(u => !store.isDone(u.id)) || units[0];
+    const wrong = DIAGNOSTIC_QUESTIONS.map((q, i) => ({ q, i, answer: result.answers[i] })).filter(x => x.answer !== x.q.a);
+    view.innerHTML = `
+      <div class="crumb"><a href="#/home">首页</a> / 入门诊断结果</div>
+      <h1>推荐起点：${level.code} · ${level.name}</h1>
+      <p class="muted">答对 ${result.correct} / ${result.total} 题。${level.id === LEVELS.length - 1 ? '你已展现研究与应用基础，建议继续用真实课题挑战自己。' : '建议先稳固当前层级，再向下一层推进。'}这不是能力标签，你可以随时自由选课。</p>
+      <div class="panel gold diag-result">
+        <span class="badge gold">${level.code}</span><h2 style="margin:8px 0">${level.name}</h2><p>${level.desc}</p>
+        <div class="exp-actions"><a class="btn primary" href="#/unit/${first.id}">开始：${first.title}</a><a class="btn" href="${levelRoute(level.id)}">查看 ${level.code} 全部课程</a><button class="btn ghost" id="diag-again">重新诊断</button></div>
+      </div>
+      <h2 style="margin:24px 0 10px">各层级表现</h2>
+      <div class="diag-scores">
+        ${result.scores.map(score => {
+          const sl = levelById(score.level);
+          return `<div class="card"><div class="exp-actions"><b>${sl.code} · ${sl.name}</b><span class="badge ${score.correct >= 2 ? 'green' : 'gold'}">${score.correct}/${score.total} · ${score.pct} 分</span></div><div class="bar"><i style="width:${score.pct}%"></i></div><p>${score.correct >= 2 ? (score.level === LEVELS.length - 1 ? '已展现研究与应用基础' : '已具备尝试下一层的基础') : '建议从这一层巩固'}</p></div>`;
+        }).join('')}
+      </div>
+      <h2 style="margin:26px 0 10px">${wrong.length ? '需要回顾的题目' : '全部答对'}</h2>
+      ${wrong.length ? `<div class="diag-review">${wrong.map(({ q, i, answer }) => `
+        <details class="faq-item"><summary>${i + 1}. ${q.skill} · ${q.q}</summary>
+          <p><b>你的答案：</b>${q.opts[answer]}</p><p><b>正确答案：</b>${q.opts[q.a]}</p><p>${q.e}</p>
+          <p><a href="#/unit/${q.unitId}">回到相关课程：${unitById(q.unitId).title} →</a></p>
+        </details>`).join('')}</div>` : '<div class="panel"><p>四个层级都展现了扎实基础，仍建议从 L3 的研究与应用课题继续挑战。</p></div>'}`;
+    view.querySelector('#diag-again').addEventListener('click', () => {
+      answers = Array(DIAGNOSTIC_QUESTIONS.length).fill(null);
+      index = 0;
+      renderQuestion();
+    });
+    view.scrollTop = 0;
+    window.scrollTo(0, 0);
+  };
+
+  renderIntro();
 }
 
 function renderQuiz(container, unitId) {
@@ -306,6 +491,7 @@ function viewUnit(id) {
   const u = unitById(id);
   if (!u) { view.innerHTML = '<div class="panel">单元不存在。</div>'; return; }
   const t = trackOf(u);
+  const ul = unitLevel(u);
   store.visit(id);
   lastContext = { unit: u.title };
   const prev = prevUnit(id), next = nextUnit(id);
@@ -315,6 +501,7 @@ function viewUnit(id) {
     <div class="lesson-head">
       <h1>${u.title}</h1>
       <span class="badge gold">${t.name.split('·')[0].trim()}</span>
+      <span class="badge blue">${ul.code} · ${ul.name}</span>
       <span class="badge">${u.minutes} 分钟</span>
       ${done ? '<span class="badge green">已完成</span>' : ''}
     </div>
@@ -987,6 +1174,7 @@ function render() {
   else if (hash.startsWith('#/flashcards')) viewFlashcards();
   else if (hash.startsWith('#/achievements')) viewAchievements();
   else if (hash.startsWith('#/learn')) viewLearn();
+  else if (hash.startsWith('#/diagnostic')) viewDiagnostic();
   else if (hash.startsWith('#/unit/')) viewUnit(hash.slice(7).split('#')[0]);
   else if (hash.startsWith('#/lab')) viewLab();
   else if (hash.startsWith('#/chem/')) viewChemDetail(hash.slice(7).split('?')[0]);

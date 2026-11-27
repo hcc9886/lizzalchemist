@@ -12,8 +12,29 @@ export const TRACKS = [
 
 export const ALL_UNITS = TRACKS.flatMap(t => t.units);
 
+export const LEVELS = [
+  { id: 0, code: 'L0', name: '启蒙观察', desc: '从火、空气、水与溶液认识物质，先建立观察、表达与安全习惯。', color: 'gold', unitIds: ['a1', 'a2', 'a3', 'a4', 'a5'] },
+  { id: 1, code: 'L1', name: '基础建构', desc: '用原子、摩尔、pH 与电子转移搭建化学语言，开始定量计算。', color: 'emerald', unitIds: ['b1', 'b2', 'b3', 'b4', 'b6'] },
+  { id: 2, code: 'L2', name: '机理进阶', desc: '从速率、平衡、热力学、动力学、电化学与结构解释“为什么”。', color: 'blue', unitIds: ['b5', 'b7', 'c1', 'c2', 'c3', 'c4'] },
+  { id: 3, code: 'L3', name: '研究应用', desc: '用测量、光谱、材料、环境、能源、药物与完整课题解决真实问题。', color: 'purple', unitIds: ['c5', 'c6', 'd1', 'd2', 'd3', 'd4', 'd5'] }
+];
+
 export function unitById(id) {
   return ALL_UNITS.find(u => u.id === id) || null;
+}
+
+export function levelById(id) {
+  return LEVELS.find(l => l.id === Number(id)) || null;
+}
+
+export function unitsAtLevel(id) {
+  const level = levelById(id);
+  return level ? level.unitIds.map(unitById).filter(Boolean) : [];
+}
+
+export function unitLevel(unitOrId) {
+  const id = typeof unitOrId === 'string' ? unitOrId : unitOrId && unitOrId.id;
+  return LEVELS.find(l => l.unitIds.includes(id)) || null;
 }
 
 export function trackOf(unit) {
