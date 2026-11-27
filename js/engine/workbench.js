@@ -50,20 +50,68 @@ export class Workbench {
     this.tray = []; this.items = []; this.links = [];
     this.fx = new ParticleFX();
     this.on = {};                       // place/connect/disconnect/move/click/guard
-    this.hover = null; this.drag = null; this.snap = null;
+    this.hover = null; this.externalHover = null; this.drag = null; this.snap = null; this.pan = null;
+    this.cameraEnabled = !!opts.camera;
+    this.camera = { x: 0, y: 0, zoom: 1 };
     this.redMsg = null; this.redT = 0; this.shake = 0;
     this._uid = 0; this._t = 0;
     this.raf = null;
-    canvas.addEventListener('pointerdown', e => this._down(e));
-    canvas.addEventListener('pointermove', e => this._move(e));
-    canvas.addEventListener('pointerup', e => this._up(e));
-    canvas.addEventListener('pointercancel', e => this._up(e));
+    this._handlers = {
+      down: e => this._down(e), move: e => this._move(e),
+      up: e => this._up(e), leave: () => this._leave(),
+      wheel: e => this._wheel(e), menu: e => this._menu(e)
+    };
+    canvas.addEventListener('pointerdown', this._handlers.down);
+    canvas.addEventListener('pointermove', this._handlers.move);
+    canvas.addEventListener('pointerup', this._handlers.up);
+    canvas.addEventListener('pointercancel', this._handlers.up);
+    canvas.addEventListener('pointerleave', this._handlers.leave);
+    canvas.addEventListener('wheel', this._handlers.wheel, { passive: false });
+    canvas.addEventListener('contextmenu', this._handlers.menu);
+  }
+
+  destroy() {
+    this.cv.removeEventListener('pointerdown', this._handlers.down);
+    this.cv.removeEventListener('pointermove', this._handlers.move);
+    this.cv.removeEventListener('pointerup', this._handlers.up);
+    this.cv.removeEventListener('pointercancel', this._handlers.up);
+    this.cv.removeEventListener('pointerleave', this._handlers.leave);
+    this.cv.removeEventListener('wheel', this._handlers.wheel);
+    this.cv.removeEventListener('contextmenu', this._handlers.menu);
+    this.drag = null; this.pan = null; this.hover = null; this.snap = null;
+    this.cv.classList.remove('dragging', 'can-drag');
+    this.fx.clear();
   }
 
   xy(e) {
     const r = this.cv.getBoundingClientRect();
     return [(e.clientX - r.left) / r.width * this.W, (e.clientY - r.top) / r.height * this.H];
   }
+
+  toWorld(x, y) {
+    return this.cameraEnabled ? [(x - this.camera.x) / this.camera.zoom, (y - this.camera.y) / this.camera.zoom]
+      : [x, y];
+  }
+
+  toScreen(x, y) {
+    return this.cameraEnabled ? [x * this.camera.zoom + this.camera.x, y * this.camera.zoom + this.camera.y]
+      : [x, y];
+  }
+
+  clientToWorld(clientX, clientY) {
+    const r = this.cv.getBoundingClientRect();
+    return this.toWorld((clientX - r.left) / r.width * this.W, (clientY - r.top) / r.height * this.H);
+  }
+
+  zoomBy(factor, sx = this.W / 2, sy = this.trayY / 2) {
+    if (!this.cameraEnabled) return;
+    const [wx, wy] = this.toWorld(sx, sy);
+    this.camera.zoom = Math.max(0.55, Math.min(2.4, this.camera.zoom * factor));
+    this.camera.x = sx - wx * this.camera.zoom;
+    this.camera.y = sy - wy * this.camera.zoom;
+  }
+
+  resetCamera() { this.camera = { x: 0, y: 0, zoom: 1 }; }
 
   /* ————— 器材台（可拖入的 SKU 列表） ————— */
   setTray(list) {
@@ -91,8 +139,10 @@ export class Workbench {
     return it;
   }
   remove(it) {
+    const had = this.links.some(l => l.a === it || l.b === it);
     this.links = this.links.filter(l => l.a !== it && l.b !== it);
     this.items = this.items.filter(x => x !== it);
+    if (had) this.on.disconnect && this.on.disconnect(it);
   }
   byId(id) { return this.items.find(i => i.uid === id) || null; }
   itemAt(x, y) {
@@ -111,19 +161,33 @@ export class Workbench {
 
   /* ————— 指针交互 ————— */
   _down(e) {
-    const [x, y] = this.xy(e);
-    if (y > this.trayY - 6) {
-      const slot = this.tray.find(s => Math.abs(x - s.x) < s.slotW / 2);
+    if (this.drag || this.pan) return;
+    const [sx, sy] = this.xy(e);
+    this.externalHover = null; this.hover = null;
+    if (sy > this.trayY - 6) {
+      const slot = this.tray.find(s => Math.abs(sx - s.x) < s.slotW / 2);
       if (slot) {
+        const [x, y] = this.toWorld(sx, sy);
         this.drag = { src: 'tray', key: slot.key, cap: slot.cap, label: slot.label, x, y, ox: 0, oy: 0 };
         try { this.cv.setPointerCapture(e.pointerId); } catch (_) { }
         this.cv.classList.add('dragging');
       }
       return;
     }
+    const [x, y] = this.toWorld(sx, sy);
     const it = this.itemAt(x, y);
+    if (this.cameraEnabled && (e.button !== 0 || !it)) {
+      this.pan = { id: e.pointerId, sx, sy, x: this.camera.x, y: this.camera.y };
+      try { this.cv.setPointerCapture(e.pointerId); } catch (_) { }
+      this.cv.classList.add('dragging');
+      e.preventDefault();
+      return;
+    }
     if (it && !it.locked) {
-      this.drag = { src: 'item', it, x, y, ox: x - it.x, oy: y - it.y, moved: false, wasLinks: this.links.filter(l => l.a === it || l.b === it) };
+      this.drag = {
+        src: 'item', it, x, y, ox: x - it.x, oy: y - it.y, moved: false,
+        startX: it.x, startY: it.y, wasLinks: this.links.filter(l => l.a === it || l.b === it)
+      };
       try { this.cv.setPointerCapture(e.pointerId); } catch (_) { }
       this.cv.classList.add('dragging');
     } else if (it) {
@@ -131,9 +195,15 @@ export class Workbench {
     }
   }
   _move(e) {
-    const [x, y] = this.xy(e);
+    const [sx, sy] = this.xy(e);
+    if (this.pan) {
+      this.camera.x = this.pan.x + sx - this.pan.sx;
+      this.camera.y = this.pan.y + sy - this.pan.sy;
+      return;
+    }
+    const [x, y] = this.toWorld(sx, sy);
     if (!this.drag) {
-      const it = y <= this.trayY && this.itemAt(x, y);
+      const it = sy <= this.trayY && this.itemAt(x, y);
       this.hover = it || null;
       this.cv.classList.toggle('can-drag', !!(it && !it.locked));
       return;
@@ -142,11 +212,11 @@ export class Workbench {
     if (d.src === 'tray') { d.x = x; d.y = y; }
     else {
       d.it.x = x - d.ox; d.it.y = y - d.oy;
-      if (dist(x, y, d.x, d.y) > 4) d.moved = true;
+      if (dist(x, y, d.x, d.y) > 4 / this.camera.zoom) d.moved = true;
     }
     // 吸附候选：拖拽物的接口 × 其他器材的接口
     const dragIfs = d.src === 'tray' ? (apparatus(d.key)?.def.interfaces || []) : d.it.def.interfaces;
-    let best = null, bestD = 30;
+    let best = null, bestD = 30 / this.camera.zoom;
     const targets = d.src === 'tray' ? this.items : this.items.filter(o => o !== d.it);
     for (const mi of dragIfs) {
       const [mx, my] = d.src === 'tray' ? [x + mi.dx, y + mi.dy] : this.anchor(d.it, mi);
@@ -165,12 +235,26 @@ export class Workbench {
     this.snap = best;
   }
   _up(e) {
+    if (this.pan) {
+      if (e.type === 'pointercancel') { this.camera.x = this.pan.x; this.camera.y = this.pan.y; }
+      this.pan = null; this.cv.classList.remove('dragging');
+      return;
+    }
     const d = this.drag;
     this.drag = null; this.cv.classList.remove('dragging');
     if (!d) return;
-    const [x, y] = this.xy(e);
+    if (e.type === 'pointercancel') {
+      if (d.src === 'item') {
+        d.it.x = d.startX; d.it.y = d.startY;
+        this.links = d.wasLinks;
+        this.on.cancel && this.on.cancel(d.it);
+      }
+      this.snap = null;
+      return;
+    }
+    const [sx, sy] = this.xy(e), [x, y] = this.toWorld(sx, sy);
     if (d.src === 'tray') {
-      if (y < this.trayY - 4) {
+      if (sy < this.trayY - 4) {
         const it = this.add(d.key, x, y, { cap: d.cap });
         if (it && this.snap) { this._place(it, this.snap); this._join(it, this.snap); }
       }
@@ -183,10 +267,34 @@ export class Workbench {
           this.on.disconnect && this.on.disconnect(it);
         }
         if (this.snap) { this._place(it, this.snap); this._join(it, this.snap); }
-        else { this.on.move && this.on.move(it); }
+        else {
+          this._bounds(it);
+          this.on.move && this.on.move(it, { x: d.startX, y: d.startY });
+        }
       }
     }
     this.snap = null;
+  }
+
+  _bounds(it) {
+    if (!this.cameraEnabled) return;
+    const z = this.camera.zoom, hw = Math.max(it.def.w, it.def.h) / 2 + 5;
+    it.x = Math.max((-this.camera.x) / z + hw, Math.min((this.W - this.camera.x) / z - hw, it.x));
+    it.y = Math.max((-this.camera.y) / z + hw, Math.min((this.trayY - this.camera.y) / z - hw, it.y));
+  }
+
+  _wheel(e) {
+    if (!this.cameraEnabled) return;
+    e.preventDefault();
+    const [sx, sy] = this.xy(e);
+    this.zoomBy(Math.exp(-e.deltaY * 0.0012), sx, Math.min(sy, this.trayY));
+  }
+
+  _menu(e) { if (this.cameraEnabled) e.preventDefault(); }
+  _leave() {
+    if (this.drag || this.pan) return;
+    this.hover = null;
+    this.cv.classList.remove('can-drag');
   }
   _place(it, snap) {
     const a = (it.rot || 0) * D2R, c = Math.cos(a), s = Math.sin(a);
@@ -200,7 +308,7 @@ export class Workbench {
   }
   _join(it, snap) {
     const ok = this.on.connect ? this.on.connect(it, snap.b, snap) : true;
-    if (ok === false) { this.links.pop(); return false; }
+    if (ok === false) return false;
     this.links.push({ a: it, ai: snap.mi.id, b: snap.b, bi: snap.bi.id });
     return true;
   }
@@ -225,7 +333,10 @@ export class Workbench {
       this.shake = Math.max(0, this.shake - 0.7);
     }
     this._bg(g);
-    this._tray(g, t);
+    g.save();
+    g.beginPath(); g.rect(0, 0, this.W, this.trayY); g.clip();
+    g.translate(this.camera.x, this.camera.y);
+    g.scale(this.camera.zoom, this.camera.zoom);
     // 电类连接画导线
     for (const l of this.links) {
       if (l.ai !== 'l' && l.ai !== 'r' && l.ai !== 'top') continue;
@@ -240,6 +351,8 @@ export class Workbench {
     for (const it of this.items) this._item(g, it, t);
     this.fx.draw(g);
     this._ui(g, t);
+    g.restore();
+    this._tray(g, t);
     g.restore();
     if (this.redT > 0) {
       this.redT--;
@@ -295,8 +408,8 @@ export class Workbench {
       g.beginPath(); g.ellipse(it.x + 6, this.trayY - 8, it.def.w / 2, 5, 0, 0, 7); g.fill();
       g.globalAlpha = 0.88;
     }
-    if (it === this.hover && !dragging) {
-      g.strokeStyle = C.gold; g.lineWidth = 1.4;
+    if ((it === this.hover || it === this.externalHover) && !dragging) {
+      g.strokeStyle = it === this.externalHover ? C.gold2 : C.gold; g.lineWidth = 1.4;
       g.strokeRect(it.x - it.def.w / 2 - 4, it.y - it.def.h / 2 - 4, it.def.w + 8, it.def.h + 8);
     }
     g.translate(it.x, it.y); g.rotate((it.rot || 0) * D2R);

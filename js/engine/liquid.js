@@ -68,8 +68,10 @@ export function drawLiquid(g, vessel, liq, t) {
     g.strokeStyle = 'rgba(255,255,255,.30)';
     g.lineWidth = 1.4;
     for (let i = 0; i < 2; i++) {
+      const rx = hw * 0.55 - i * 5, ry = (vessel.yBot - ySurf) * 0.28 - i * 3;
+      if (rx <= 0 || ry <= 0) continue;
       g.beginPath();
-      g.ellipse(0, 0, hw * 0.55 - i * 5, (vessel.yBot - ySurf) * 0.28 - i * 3, 0, 0, 7);
+      g.ellipse(0, 0, rx, ry, 0, 0, 7);
       g.stroke();
     }
     g.restore();
