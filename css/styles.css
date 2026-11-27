@@ -430,3 +430,31 @@ mark{background:rgba(212,165,66,.3);color:var(--gold2);padding:0 2px;border-radi
   .lab-stage{display:flex;flex-direction:column}
   .lab-stage canvas{order:-1}
 }
+
+/* ---------- 账号与云同步 ---------- */
+.account-btn{display:flex;align-items:center;gap:7px;flex-shrink:0;padding:7px 14px;border-radius:10px;
+  color:var(--ink);background:rgba(212,165,66,.10);border:1px solid rgba(212,165,66,.4);
+  font-size:13.5px;font-family:var(--sans);cursor:pointer;transition:all .2s;max-width:180px}
+.account-btn:hover{background:rgba(212,165,66,.2);border-color:var(--gold)}
+.account-btn svg{width:16px;height:16px;color:var(--gold);flex-shrink:0}
+.account-btn span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+i.acct-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}
+i.acct-dot.ok{background:var(--emerald);box-shadow:0 0 8px rgba(46,168,130,.8)}
+i.acct-dot.err{background:var(--red);box-shadow:0 0 8px rgba(239,68,68,.8)}
+i.acct-dot.busy{background:var(--gold2);animation:pulseGlow 1.2s infinite}
+.sync-stat{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted);margin:8px 0 4px;line-height:1.5}
+.acct-tabs{display:flex;gap:8px;margin:12px 0 10px}
+.acct-tabs .btn{flex:1}
+.acct-form{display:flex;flex-direction:column;gap:9px}
+.acct-form input{background:rgba(7,12,24,.6);border:1px solid var(--line);border-radius:9px;
+  color:var(--ink);padding:10px 12px;font-size:14px;font-family:var(--sans);width:100%}
+.acct-form input::placeholder{color:var(--muted)}
+.acct-form input:focus{outline:none;border-color:var(--gold)}
+.acct-msg{font-size:12.5px;min-height:17px}
+.acct-msg.err{color:var(--red)}
+.acct-msg.ok{color:var(--emerald)}
+.acct-panel{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-top:14px;background:rgba(7,12,24,.4)}
+.acct-panel summary{cursor:pointer;color:var(--gold2);font-size:13px;user-select:none}
+.acct-sql{font-family:var(--mono);font-size:11px;line-height:1.55;white-space:pre;overflow:auto;
+  background:#0a0f1e;border:1px solid var(--line);border-radius:8px;padding:10px 12px;color:#9fb6df;margin-top:8px}
+@media(max-width:760px){ .account-btn{padding:7px 10px} .account-btn span{display:none} }

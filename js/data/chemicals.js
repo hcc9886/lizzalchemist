@@ -838,6 +838,499 @@ export const CHEMICALS = {
     storage: '密封避潮', spill: '—', waste: '—',
     teaching: '正确用法：玻璃棒蘸液滴在试纸上，与比色卡比对。错误用法：把试纸浸入溶液（污染整瓶）或先用水润湿（稀释被测液，测弱酸偏低弱碱偏高）。',
     grade_level: 0, tags: ['检验', 'pH']
+  }),
+
+  /* ————— 酸（扩容） ————— */
+  h3po4: C({
+    id: 'h3po4', name: '磷酸', en: 'Phosphoric acid', formula: 'H₃PO₄', mw: 98.00, cas: '7664-38-2',
+    smiles: 'OP(=O)(O)O',
+    appearance: '无色透明黏稠液体（85% 为糖浆状）', odor: '无气味',
+    props: { density: '1.69 g/cm³（纯）', mp: '42 ℃', bp: '213 ℃（失水）', solubility: '易溶于水', ph: '强酸性（三元中强酸）', corrosive: true, volatile: false },
+    ghs: { pictos: ['GHS05'], signal: '危险', h: ['H314：造成严重皮肤灼伤和眼损伤'], p: ['P280：戴防护手套/护目镜', 'P305+P351+P338：入眼立即冲洗'] },
+    uses: ['制磷肥', '食品添加剂（可乐的酸味）', '金属除锈'], dosage: '视实验而定',
+    reactions: [{ eq: 'H₃PO₄ + 3NaOH → Na₃PO₄ + 3H₂O', note: '三元酸分步电离，滴定有三个化学计量点。' }],
+    storage: '密封，远离碱类', spill: '大量水冲洗', waste: '中和后处理',
+    teaching: '可乐的酸味主要来自磷酸——酸不都是"危险"的代名词，关键看浓度与摄入量。',
+    grade_level: 2, tags: ['酸', '食品']
+  }),
+  /* ————— 碱（扩容） ————— */
+  koh: C({
+    id: 'koh', name: '氢氧化钾', en: 'Potassium hydroxide', alias: ['苛性钾'], formula: 'KOH', mw: 56.11, cas: '1310-58-3',
+    smiles: '[K+].[OH-]',
+    appearance: '白色固体（片状/颗粒）', odor: '无气味',
+    props: { density: '2.04 g/cm³', mp: '360 ℃', bp: '1327 ℃', solubility: '极易溶于水（强烈放热）', ph: '13.5（1 mol/L）', corrosive: true, volatile: false },
+    ghs: { pictos: ['GHS05'], signal: '危险', h: ['H302：吞咽有害', 'H314：造成严重皮肤灼伤和眼损伤'], p: ['P280：戴防护手套/护目镜', 'P305+P351+P338：入眼立即冲洗'] },
+    uses: ['制软皂', '电解液（碱性电池）', '吸收酸性气体'], dosage: '视实验而定',
+    reactions: [{ eq: '2KOH + H₂SO₄ → K₂SO₄ + 2H₂O', note: '中和反应与 NaOH 类似，但钾盐大多比钠盐溶解度更大。' }],
+    storage: '密封防潮（强吸湿）', spill: '大量水冲洗', waste: '中和后处理',
+    teaching: 'NaOH 与 KOH 性质几乎相同——"同主族元素性质相似"的活教材。',
+    grade_level: 2, tags: ['碱', '腐蚀']
+  }),
+  mg_oh2: C({
+    id: 'mg_oh2', name: '氢氧化镁', en: 'Magnesium hydroxide', formula: 'Mg(OH)₂', mw: 58.32, cas: '1309-42-8',
+    smiles: '[Mg+2].[OH-].[OH-]',
+    appearance: '白色粉末', odor: '无气味',
+    props: { density: '2.36 g/cm³', mp: '350 ℃（分解）', bp: '—', solubility: '难溶于水', ph: '弱碱性（悬浊液 pH≈9.5）', corrosive: false, volatile: false },
+    uses: ['抗胃酸药（镁乳）', '阻燃剂', '污水处理中和剂'], dosage: '遵医嘱',
+    reactions: [{ eq: 'Mg(OH)₂ + 2HCl → MgCl₂ + 2H₂O', note: '中和胃酸——弱碱比强碱安全，因为溶解度小、释放 OH⁻ 缓慢。' }],
+    storage: '密封', spill: '清扫回收', waste: '—',
+    teaching: '治胃酸过多为什么用 Mg(OH)₂ 而不用 NaOH？——"能用"不只看反应方程式，还要看腐蚀性与溶解行为。',
+    grade_level: 1, tags: ['碱', '医药']
+  }),
+  al_oh3: C({
+    id: 'al_oh3', name: '氢氧化铝', en: 'Aluminium hydroxide', formula: 'Al(OH)₃', mw: 78.00, cas: '21645-51-2',
+    smiles: '[Al+3].[OH-].[OH-].[OH-]',
+    appearance: '白色无定形粉末', odor: '无气味',
+    props: { density: '2.42 g/cm³', mp: '300 ℃（分解）', bp: '—', solubility: '难溶于水', ph: '两性（既溶于强酸又溶于强碱）', corrosive: false, volatile: false },
+    uses: ['胃药（中和胃酸）', '阻燃填料', '净水絮凝剂原料'], dosage: '遵医嘱',
+    reactions: [
+      { eq: 'Al(OH)₃ + 3HCl → AlCl₃ + 3H₂O', note: '与酸反应——表现碱性。' },
+      { eq: 'Al(OH)₃ + NaOH → NaAlO₂ + 2H₂O', note: '与强碱反应——表现酸性。两性是铝最特别的性质。' }
+    ],
+    storage: '密封', spill: '清扫回收', waste: '—',
+    teaching: 'Al(OH)₃ 沉淀加过量 NaOH 会"消失"——检验铝离子的特征现象，也是"两性"概念的招牌实验。',
+    grade_level: 2, tags: ['碱', '两性']
+  }),
+  fe_oh3: C({
+    id: 'fe_oh3', name: '氢氧化铁', en: 'Iron(III) hydroxide', formula: 'Fe(OH)₃', mw: 106.87, cas: '20344-49-4',
+    smiles: '[Fe+3].[OH-].[OH-].[OH-]',
+    appearance: '红褐色沉淀/粉末', odor: '无气味',
+    props: { density: '3.4 g/cm³', mp: '—（受热分解为 Fe₂O₃）', bp: '—', solubility: '难溶于水', ph: '—', corrosive: false, volatile: false },
+    uses: ['颜料（铁红前驱体）', '净水吸附剂'], dosage: '—',
+    reactions: [
+      { eq: 'FeCl₃ + 3NaOH → Fe(OH)₃↓ + 3NaCl', note: '红褐色沉淀——检验 Fe³⁺ 的经典现象。' },
+      { eq: '2Fe(OH)₃ →(Δ) Fe₂O₃ + 3H₂O', note: '受热分解得铁红颜料。' }
+    ],
+    storage: '—', spill: '—', waste: '—',
+    teaching: '"红褐色沉淀"四个字在推断题里几乎直接指向 Fe(OH)₃——颜色是化学人的第六感。',
+    grade_level: 1, tags: ['碱', '沉淀']
+  }),
+  /* ————— 盐（扩容） ————— */
+  mgcl2: C({
+    id: 'mgcl2', name: '氯化镁', en: 'Magnesium chloride', formula: 'MgCl₂', mw: 95.21, cas: '7786-30-3',
+    smiles: 'Cl[Mg]Cl',
+    appearance: '白色易潮解晶体', odor: '无气味',
+    props: { density: '2.32 g/cm³', mp: '714 ℃', bp: '1412 ℃', solubility: '易溶于水', ph: '6.5–7（微酸）', corrosive: false, volatile: false },
+    uses: ['卤水点豆腐', '融雪剂', '镁合金原料'], dosage: '—',
+    reactions: [{ eq: 'MgCl₂ + 2NaOH → Mg(OH)₂↓ + 2NaCl', note: '白色沉淀——镁离子的检验。' }],
+    storage: '密封防潮', spill: '清扫', waste: '—',
+    teaching: '海水中镁的总储量约 1800 亿吨——"卤水点豆腐"其实就是 Mg²⁺ 使豆浆蛋白质凝聚。',
+    grade_level: 1, tags: ['盐']
+  }),
+  mgso4: C({
+    id: 'mgso4', name: '硫酸镁', en: 'Magnesium sulfate', alias: ['泻盐', '苦盐'], formula: 'MgSO₄', mw: 120.37, cas: '7487-88-9',
+    smiles: '[O-]S(=O)(=O)[O-].[Mg+2]',
+    appearance: '白色晶体（七水盐为针状）', odor: '无气味（微苦）',
+    props: { density: '2.66 g/cm³', mp: '1124 ℃（分解）', bp: '—', solubility: '易溶于水', ph: '6–7', corrosive: false, volatile: false },
+    uses: ['医用泻盐/浴盐', '农艺补镁', '干燥剂（无水盐）'], dosage: '遵医嘱',
+    reactions: [{ eq: 'MgSO₄ + BaCl₂ → BaSO₄↓ + MgCl₂', note: '白色不溶于稀硝酸的沉淀——SO₄²⁻ 的检验。' }],
+    storage: '干燥密封', spill: '清扫', waste: '—',
+    teaching: '无水 MgSO₄ 是有机实验里最常用的干燥剂——"干燥"就是把水"锁"进晶格。',
+    grade_level: 1, tags: ['盐', '医药']
+  }),
+  ki: C({
+    id: 'ki', name: '碘化钾', en: 'Potassium iodide', formula: 'KI', mw: 166.00, cas: '7681-11-0',
+    smiles: '[K+].[I-]',
+    appearance: '白色晶体（久置微黄）', odor: '无气味',
+    props: { density: '3.12 g/cm³', mp: '681 ℃', bp: '1330 ℃', solubility: '极易溶于水', ph: '6–8', corrosive: false, volatile: false },
+    uses: ['加碘盐（碘酸钾更常用）', '淀粉碘化钾试纸', '碘的助溶剂'], dosage: '微量',
+    reactions: [
+      { eq: '2KI + Cl₂ → 2KCl + I₂', note: '氧化性强的卤素置换出碘——试纸变蓝检测 Cl₂。' },
+      { eq: 'I₂ + I⁻ → I₃⁻', note: '碘在 KI 溶液中溶解度大增——"相似相溶"与络合的好例子。' }
+    ],
+    storage: '避光密封', spill: '清扫', waste: '回收',
+    teaching: '淀粉遇 I₃⁻ 变蓝是中学最灵敏的"显色反应"之一，灵敏度可达 10⁻⁵ mol/L。',
+    grade_level: 1, tags: ['盐', '检验']
+  }),
+  na2so4: C({
+    id: 'na2so4', name: '硫酸钠', en: 'Sodium sulfate', alias: ['芒硝（十水盐）'], formula: 'Na₂SO₄', mw: 142.04, cas: '7757-82-6',
+    smiles: '[Na+].[Na+].[O-]S(=O)(=O)[O-]',
+    appearance: '白色晶体或粉末', odor: '无气味（微苦咸）',
+    props: { density: '2.68 g/cm³', mp: '884 ℃', bp: '—', solubility: '易溶于水', ph: '中性', corrosive: false, volatile: false },
+    uses: ['造纸蒸煮剂', '玻璃制造', '中药芒硝（泻下）'], dosage: '—',
+    reactions: [{ eq: 'Na₂SO₄ + BaCl₂ → BaSO₄↓ + 2NaCl', note: '检验 SO₄²⁻ 时先加稀盐酸排除 CO₃²⁻ 干扰，再加 BaCl₂。' }],
+    storage: '干燥', spill: '清扫', waste: '—',
+    teaching: '十水硫酸钠（芒硝）溶解时大量吸热——古代"冰窖"和现代蓄冷材料的化学原理。',
+    grade_level: 1, tags: ['盐']
+  }),
+  nh4no3: C({
+    id: 'nh4no3', name: '硝酸铵', en: 'Ammonium nitrate', formula: 'NH₄NO₃', mw: 80.04, cas: '6484-52-2',
+    smiles: '[NH4+].[N+](=O)([O-])[O-]',
+    appearance: '白色晶体', odor: '无气味',
+    props: { density: '1.72 g/cm³', mp: '169.6 ℃', bp: '210 ℃（分解）', solubility: '极易溶于水（强烈吸热）', ph: '弱酸性', corrosive: false, volatile: false },
+    ghs: { pictos: ['GHS03', 'GHS07'], signal: '警告', h: ['H272：可能加剧燃烧（氧化性）', 'H319：造成严重眼刺激'], p: ['P210：远离热源', 'P220：远离衣物和可燃物'] },
+    uses: ['高效氮肥', '速效冷敷袋（溶解吸热）'], dosage: '农用按规程',
+    reactions: [{ eq: 'NH₄NO₃ →(Δ) N₂O↑ + 2H₂O', note: '受热分解——大量堆存时受热或受冲击有风险，属管控化学品，实验室只做少量演示。' }],
+    storage: '远离可燃物，管控存放', spill: '清扫回收', waste: '按危化品处理',
+    teaching: '"硝酸铵溶于水，烧杯变冰凉"是经典吸热演示——但大堆存放的危险性（历史上重大事故）同样要牢记：剂量决定危险。',
+    grade_level: 2, tags: ['盐', '氮肥', '氧化性']
+  }),
+  nh4hco3: C({
+    id: 'nh4hco3', name: '碳酸氢铵', en: 'Ammonium bicarbonate', alias: ['碳铵', '气肥'], formula: 'NH₄HCO₃', mw: 79.06, cas: '1066-33-7',
+    smiles: '[NH4+].C(=O)([O-])O',
+    appearance: '白色晶体', odor: '微氨味',
+    props: { density: '1.59 g/cm³', mp: '36–60 ℃（分解）', bp: '—', solubility: '易溶于水', ph: '7.8（弱碱性）', corrosive: false, volatile: true },
+    uses: ['速效氮肥（"气肥"）', '食品膨松剂（旧式）'], dosage: '—',
+    reactions: [{ eq: 'NH₄HCO₃ →(Δ) NH₃↑ + H₂O + CO₂↑', note: '受热完全分解为气体——保存必须密封阴凉，否则"越放越少"。' }],
+    storage: '密封阴凉避热', spill: '清扫', waste: '—',
+    teaching: '碳铵施入土壤"见光就跑"——氮肥的三兄弟（碳铵/尿素/硝铵）各有脾气，正是稳定性差异的教材。',
+    grade_level: 1, tags: ['盐', '氮肥']
+  }),
+  cu2_oh2co3: C({
+    id: 'cu2_oh2co3', name: '碱式碳酸铜', en: 'Basic copper carbonate', alias: ['铜绿', '铜锈'], formula: 'Cu₂(OH)₂CO₃', mw: 221.12, cas: '12069-69-3',
+    smiles: null,
+    appearance: '孔雀绿色粉末', odor: '无气味',
+    props: { density: '4.0 g/cm³', mp: '200 ℃（分解）', bp: '—', solubility: '难溶于水，溶于酸', ph: '—', corrosive: false, volatile: false },
+    ghs: { pictos: ['GHS07', 'GHS09'], signal: '警告', h: ['H302：吞咽有害', 'H410：对水生生物毒性极大'], p: ['P264：操作后洗手', 'P273：避免释入环境'] },
+    uses: ['颜料（石绿）', '铜器养护研究'], dosage: '—',
+    reactions: [
+      { eq: '2Cu + O₂ + CO₂ + H₂O → Cu₂(OH)₂CO₃', note: '铜器生锈的全方程式——需要氧气、二氧化碳和水三者齐备。' },
+      { eq: 'Cu₂(OH)₂CO₃ →(Δ) 2CuO + H₂O + CO₂↑', note: '绿色变黑色——加热分解检验。' }
+    ],
+    storage: '密封', spill: '清扫', waste: '回收',
+    teaching: '"铜绿"是碱式盐的代言人——古壁画里的石绿色千年不褪，炼金术士称为"铜之花"。',
+    grade_level: 1, tags: ['盐', '铜', '颜料']
+  }),
+  na_no2: C({
+    id: 'na_no2', name: '亚硝酸钠', en: 'Sodium nitrite', formula: 'NaNO₂', mw: 69.00, cas: '7632-00-0',
+    smiles: '[N+](=O)([O-])[O-].[Na+]',
+    appearance: '白色或微黄晶体', odor: '无气味（微咸——严禁误食！）',
+    props: { density: '2.17 g/cm³', mp: '271 ℃', bp: '320 ℃（分解）', solubility: '易溶于水', ph: '8–9（弱碱）', corrosive: false, volatile: false },
+    ghs: { pictos: ['GHS06', 'GHS07', 'GHS09'], signal: '危险', h: ['H301：吞咽会中毒', 'H319：造成严重眼刺激', 'H400：对水生生物毒性极大'], p: ['P264：操作后彻底洗手', 'P301+P310：吞咽立即就医'] },
+    uses: ['肉制品护色剂（合规限量）', '防锈缓蚀剂'], dosage: '食品有严格限量（GB 2760）',
+    reactions: [{ eq: 'NaNO₂ + NH₄Cl → NaCl + N₂↑ + 2H₂O', note: '与铵盐反应放氮——实验室少量制氮气的方法。' }],
+    storage: '专柜存放，严禁与食盐混放', spill: '清扫回收', waste: '按危化品处理',
+    teaching: '外观和味道都与食盐相近却是剧毒品——化学品不能靠"尝"辨识，这是实验室铁律。违规超量添加会与肉类胺类生成亚硝胺（致癌）。',
+    grade_level: 2, tags: ['盐', '有毒', '食品添加']
+  }),
+  kscn: C({
+    id: 'kscn', name: '硫氰化钾', en: 'Potassium thiocyanate', formula: 'KSCN', mw: 81.12, cas: '333-20-0',
+    smiles: '[K+].SC#N',
+    appearance: '白色晶体', odor: '无气味（微苦）',
+    props: { density: '1.89 g/cm³', mp: '173 ℃', bp: '—（分解）', solubility: '易溶于水', ph: '6–7', corrosive: false, volatile: false },
+    ghs: { pictos: ['GHS07'], signal: '警告', h: ['H302：吞咽有害', 'H312：皮肤接触有害'], p: ['P264：操作后洗手'] },
+    uses: ['检验 Fe³⁺ 的灵敏试剂', 'blood-red 显色'], dosage: '几滴即可',
+    reactions: [{ eq: 'Fe³⁺ + 3SCN⁻ → Fe(SCN)₃（血红色）', note: '血红色络合物——中学最灵敏的离子检验之一，一滴就见色。' }],
+    storage: '密封', spill: '清扫', waste: '回收',
+    teaching: '加入 KSCN 溶液变血红色，就能断定溶液里有 Fe³⁺——"灵敏、专属"是优秀检验试剂的两个标准。',
+    grade_level: 2, tags: ['盐', '检验']
+  }),
+  alum: C({
+    id: 'alum', name: '明矾', en: 'Alum (potassium alum)', alias: ['十二水硫酸铝钾'], formula: 'KAl(SO₄)₂·12H₂O', mw: 474.39, cas: '7784-24-9',
+    smiles: null,
+    appearance: '无色透明大块晶体', odor: '无气味（微甜涩）',
+    props: { density: '1.76 g/cm³', mp: '92.5 ℃（失结晶水）', bp: '—', solubility: '溶于水（水解显酸性）', ph: '3–4（水解）', corrosive: false, volatile: false },
+    uses: ['净水（絮凝）', '食品膨松剂成分（旧）', '印染媒染剂'], dosage: '净水用量严格控制',
+    reactions: [{ eq: 'Al³⁺ + 3H₂O ⇌ Al(OH)₃（胶体） + 3H⁺', note: '水解生成的 Al(OH)₃ 胶体吸附悬浮物——古人"净水明矾"的科学内核。' }],
+    storage: '干燥密封', spill: '清扫', waste: '—',
+    teaching: '炼金术士的"神秘白盐"，如今是初三水解概念的最佳素材：盐不一定是"中性"的。',
+    grade_level: 1, tags: ['盐', '铝', '净水']
+  }),
+  /* ————— 氧化物（扩容） ————— */
+  so3: C({
+    id: 'so3', name: '三氧化硫', en: 'Sulfur trioxide', formula: 'SO₃', mw: 80.06, cas: '7446-11-9',
+    smiles: 'O=S(=O)=O',
+    appearance: '无色易挥发晶体（针状）', odor: '刺激性气味',
+    props: { density: '1.92 g/cm³', mp: '16.9 ℃', bp: '45 ℃', solubility: '与水剧烈反应', ph: '—（溶于水成硫酸）', corrosive: true, volatile: true },
+    ghs: { pictos: ['GHS05'], signal: '危险', h: ['H314：造成严重皮肤灼伤和眼损伤'], p: ['P280：戴防护手套/护目镜', 'P305+P351+P338：入眼立即冲洗'] },
+    uses: ['工业制硫酸的中间体'], dosage: '—（工业密闭流程）',
+    reactions: [
+      { eq: '2SO₂ + O₂ ⇌(催化剂Δ) 2SO₃', note: '接触法核心可逆反应——V₂O₅ 催化剂。' },
+      { eq: 'SO₃ + H₂O → H₂SO₄', note: '溶于水放大量热，工业上用浓硫酸吸收防酸雾。' }
+    ],
+    storage: '密闭容器', spill: '通风隔离', waste: '—',
+    teaching: 'SO₃ 是"最酸的氧化物"——它与水的结合强烈到会爆沸，所以工业吸收反而要避开纯水。',
+    grade_level: 3, tags: ['氧化物', '酸性氧化物']
+  }),
+  no2: C({
+    id: 'no2', name: '二氧化氮', en: 'Nitrogen dioxide', formula: 'NO₂', mw: 46.01, cas: '10102-44-0',
+    smiles: 'O=[N+](=O)[O-]',
+    appearance: '红棕色刺激性气体', odor: '强烈刺激气味',
+    props: { density: '1.58 g/L（比空气大）', mp: '-11 ℃', bp: '21 ℃', solubility: '溶于水成硝酸', ph: '—', corrosive: true, volatile: true },
+    ghs: { pictos: ['GHS05', 'GHS06'], signal: '危险', h: ['H314：造成严重皮肤灼伤', 'H331：吸入有毒'], p: ['P261：避免吸入', 'P304+P340：移至空气新鲜处'] },
+    uses: ['工业制硝酸中间体'], dosage: '—',
+    reactions: [
+      { eq: '2NO + O₂ → 2NO₂', note: '无色 NO 遇空气立即变红棕——辨识两类氮氧化物。' },
+      { eq: '3NO₂ + H₂O → 2HNO₃ + NO', note: '工业硝酸第三步；雷雨生硝酸是自然固氮。' }
+    ],
+    storage: '密闭通风', spill: '立即通风', waste: '碱液吸收',
+    teaching: '红棕色是 NO₂ 的"身份证"——但别吸入！它的毒性来自与体内水反应生成硝酸和亚硝酸。',
+    grade_level: 2, tags: ['氧化物', '有毒', '大气污染']
+  }),
+  no: C({
+    id: 'no', name: '一氧化氮', en: 'Nitric oxide', formula: 'NO', mw: 30.01, cas: '10102-43-9',
+    smiles: '[N]=O',
+    appearance: '无色气体', odor: '无气味',
+    props: { density: '1.34 g/L', mp: '-164 ℃', bp: '-152 ℃', solubility: '难溶于水', ph: '—', corrosive: false, volatile: true },
+    ghs: { pictos: ['GHS06'], signal: '危险', h: ['H331：吸入有毒'], p: ['P261：避免吸入', 'P304+P340：移至空气新鲜处'] },
+    uses: ['生物信使分子（舒张血管）', '工业中间体'], dosage: '—',
+    reactions: [
+      { eq: 'N₂ + O₂ →(放电) 2NO', note: '雷雨天固氮——闪电把空气变成天然氮肥。' },
+      { eq: '2NO + O₂ → 2NO₂', note: '遇空气立即变红棕色。' }
+    ],
+    storage: '钢瓶', spill: '通风', waste: '—',
+    teaching: '曾经被视为"污染物"的 NO，1998 年诺贝尔奖揭示它是人体的血管舒张信使——化学没有"废料分子"，只有未被发现的角色。',
+    grade_level: 3, tags: ['氧化物', '有毒']
+  }),
+  mgo: C({
+    id: 'mgo', name: '氧化镁', en: 'Magnesium oxide', alias: ['苦土'], formula: 'MgO', mw: 40.30, cas: '1309-48-4',
+    smiles: 'O=[Mg]',
+    appearance: '白色疏松粉末', odor: '无气味',
+    props: { density: '3.58 g/cm³', mp: '2852 ℃', bp: '3600 ℃', solubility: '微溶于水（弱碱）', ph: '9–10（悬浊液）', corrosive: false, volatile: false },
+    uses: ['耐火材料（熔炉内衬）', '医用抗酸剂', '保温材料'], dosage: '—',
+    reactions: [{ eq: 'MgO + H₂O → Mg(OH)₂（缓慢）', note: '与水反应比 CaO 温和得多。' }],
+    storage: '干燥', spill: '清扫', waste: '—',
+    teaching: '熔点近 3000 ℃——炼钢炉内衬靠它抗住铁水的"热情"。',
+    grade_level: 1, tags: ['氧化物', '碱性氧化物']
+  }),
+  sio2: C({
+    id: 'sio2', name: '二氧化硅', en: 'Silicon dioxide', alias: ['石英', '沙子', '硅石'], formula: 'SiO₂', mw: 60.08, cas: '14808-60-7',
+    smiles: 'O=[Si]=O',
+    appearance: '无色透明晶体或白色粉末', odor: '无气味',
+    props: { density: '2.65 g/cm³', mp: '1710 ℃', bp: '2230 ℃', solubility: '不溶于水/酸（氢氟酸除外）', ph: '—（酸性氧化物）', corrosive: false, volatile: false },
+    ghs: { pictos: ['GHS08'], signal: '警告', h: ['H373：长期吸入粉尘可能损害肺部（矽肺）'], p: ['P260：勿吸入粉尘'] },
+    uses: ['玻璃/光导纤维/芯片', '石英钟表', '硅胶干燥剂'], dosage: '—',
+    reactions: [
+      { eq: 'SiO₂ + 2NaOH → Na₂SiO₃ + H₂O', note: '强碱腐蚀玻璃的实质——所以 NaOH 溶液用橡胶塞不用玻璃塞。' },
+      { eq: 'SiO₂ + 4HF → SiF₄↑ + 2H₂O', note: '氢氟酸刻蚀玻璃——"不溶于酸"的唯一例外。' }
+    ],
+    storage: '—', spill: '清扫（防扬尘）', waste: '—',
+    teaching: '沙子、水晶、光纤、芯片是同一种物质的不同"排列方式"——晶体结构决定宏观世界。',
+    grade_level: 1, tags: ['氧化物', '酸性氧化物']
+  }),
+  na2o2: C({
+    id: 'na2o2', name: '过氧化钠', en: 'Sodium peroxide', formula: 'Na₂O₂', mw: 77.98, cas: '1313-60-6',
+    smiles: '[O-].[O-].[Na+].[Na+]',
+    appearance: '淡黄色粉末', odor: '无气味',
+    props: { density: '2.81 g/cm³', mp: '460 ℃（分解）', bp: '657 ℃', solubility: '与水剧烈反应', ph: '—', corrosive: true, volatile: false },
+    ghs: { pictos: ['GHS03', 'GHS05'], signal: '危险', h: ['H271：可能引起燃烧或爆炸（强氧化性）', 'H314：造成严重皮肤灼伤'], p: ['P210：远离热源', 'P280：戴防护手套/护目镜'] },
+    uses: ['潜艇/呼吸面具供氧剂'], dosage: '—',
+    reactions: [
+      { eq: '2Na₂O₂ + 2H₂O → 4NaOH + O₂↑', note: '与水反应放氧气——潜水艇里"呼吸的化学"。' },
+      { eq: '2Na₂O₂ + 2CO₂ → 2Na₂CO₃ + O₂', note: '吸收 CO₂ 同时放 O₂——一举两得的供氧剂。' }
+    ],
+    storage: '密封隔绝水与 CO₂', spill: '干砂覆盖，严禁用水', waste: '按危化品处理',
+    teaching: '淡黄色是过氧化物的标志色——它与人呼出的 CO₂ 反应放出氧气，是太空与深潜生命的化学底线。（强腐蚀强氧化，仅教学展示）',
+    grade_level: 3, tags: ['氧化物', '过氧化物', '供氧']
+  }),
+  /* ————— 金属与非金属单质（扩容） ————— */
+  na_metal: C({
+    id: 'na_metal', name: '金属钠', en: 'Sodium metal', formula: 'Na', mw: 22.99, cas: '7440-23-5',
+    smiles: '[Na]',
+    appearance: '银白色金属（蜡状质软，保存在煤油中）', odor: '无气味',
+    props: { density: '0.97 g/cm³（比水轻）', mp: '97.8 ℃', bp: '883 ℃', solubility: '与水剧烈反应', ph: '—', corrosive: true, volatile: false },
+    ghs: { pictos: ['GHS02', 'GHS05'], signal: '危险', h: ['H261：遇水放出易燃气体', 'H314：造成严重皮肤灼伤'], p: ['P223：不得与水接触', 'P231+P232：在惰性气体/矿物油下操作'] },
+    uses: ['钠光灯（路灯黄光）', '核反应堆导热剂', '化工原料'], dosage: '—（仅教师演示）',
+    reactions: [
+      { eq: '2Na + 2H₂O → 2NaOH + H₂↑', note: '钠浮于水面熔成小球、四处游动，滴有酚酞的溶液变红——"浮熔游响红"五字诀。' },
+      { eq: '4Na + O₂ → 2Na₂O（常温）；2Na + O₂ →(点燃) Na₂O₂', note: '条件不同产物不同。' }
+    ],
+    storage: '浸没于煤油，隔绝水与空气', spill: '大量干砂覆盖，严禁水', waste: '教师按规程少量处理',
+    teaching: '钠是"最活泼的常见金属"代言人——它连水都不放过，所以只能住在煤油里。（严禁自行取用操作）',
+    grade_level: 2, tags: ['金属', '碱金属', '危险演示']
+  }),
+  ca_metal: C({
+    id: 'ca_metal', name: '金属钙', en: 'Calcium metal', formula: 'Ca', mw: 40.08, cas: '7440-70-2',
+    smiles: '[Ca]',
+    appearance: '银白色金属（表面常覆氧化膜）', odor: '无气味',
+    props: { density: '1.55 g/cm³', mp: '842 ℃', bp: '1484 ℃', solubility: '与水反应（较钠温和）', ph: '—', corrosive: true, volatile: false },
+    ghs: { pictos: ['GHS02'], signal: '危险', h: ['H261：遇水放出易燃气体'], p: ['P223：不得与水接触', 'P231+P232：惰性环境下操作'] },
+    uses: ['冶炼还原剂', '脱水剂', '合金'], dosage: '—',
+    reactions: [{ eq: 'Ca + 2H₂O → Ca(OH)₂ + H₂↑', note: '与水反应比钠"文静"——同主族从上到下金属活泼性递减的反例辨析（Ca 活泼性其实高于 Na，但氢氧化物溶解度小）。' }],
+    storage: '密封隔绝空气', spill: '干砂覆盖', waste: '按规程处理',
+    teaching: '钙与水反应不如钠剧烈，但钙的金属性其实更强——反应剧烈程度还受产物溶解度影响，化学不只有一张"活泼性表"。',
+    grade_level: 3, tags: ['金属', '碱土金属']
+  }),
+  hg: C({
+    id: 'hg', name: '汞', en: 'Mercury', alias: ['水银'], formula: 'Hg', mw: 200.59, cas: '7439-97-6',
+    smiles: '[Hg]',
+    appearance: '银白色液态金属', odor: '无气味',
+    props: { density: '13.6 g/cm³', mp: '-38.8 ℃', bp: '356.7 ℃', solubility: '不溶于水', ph: '—', corrosive: false, volatile: true },
+    ghs: { pictos: ['GHS06', 'GHS08', 'GHS09'], signal: '危险', h: ['H330：吸入致命', 'H373：长期接触损害神经系统', 'H410：对水生生物毒性极大且长期持续'], p: ['P260：勿吸入蒸气', 'P308+P313：接触后就医'] },
+    uses: ['温度计/气压计（传统）', '日光灯管（微量）', 'historic 炼金"银液"'], dosage: '—',
+    reactions: [{ eq: 'HgS →(Δ) Hg + S（火法炼汞的逆过程）', note: '朱砂（HgS）加热得汞——古代炼丹术的核心反应，葛洪《抱朴子》有载。' }],
+    storage: '密闭水下/专用容器', spill: '硫粉覆盖（生成 HgS），开窗通风', waste: '按危废处理，严禁倒入下水道',
+    teaching: '常温唯一液态金属。秦始皇陵"以水银为百川江河"——但汞蒸气剧毒，一支体温计泄漏也要认真处理（撒硫粉）。',
+    grade_level: 3, tags: ['金属', '有毒', '历史']
+  }),
+  ag_metal: C({
+    id: 'ag_metal', name: '金属银', en: 'Silver metal', formula: 'Ag', mw: 107.87, cas: '7440-22-4',
+    smiles: '[Ag]',
+    appearance: '银白色金属光泽', odor: '无气味',
+    props: { density: '10.5 g/cm³', mp: '962 ℃', bp: '2162 ℃', solubility: '不溶于水', ph: '—', corrosive: false, volatile: false },
+    uses: ['导线（导电性第一）', '银镜/首饰', '抗菌材料'], dosage: '—',
+    reactions: [{ eq: 'Ag + 2HNO₃（浓） → AgNO₃ + NO₂↑ + H₂O', note: '银不与盐酸/稀硫酸反应，但溶于硝酸——贵金属的"脾气"。' }],
+    storage: '—', spill: '—', waste: '回收',
+    teaching: '导电性银第一、铜第二——为什么电线还用铜？价格差 50 倍，工程 = 科学 × 经济。',
+    grade_level: 1, tags: ['金属', '贵金属']
+  }),
+  au_metal: C({
+    id: 'au_metal', name: '金属金', en: 'Gold metal', formula: 'Au', mw: 196.97, cas: '7440-57-5',
+    smiles: '[Au]',
+    appearance: '金黄色金属光泽', odor: '无气味',
+    props: { density: '19.3 g/cm³', mp: '1064 ℃', bp: '2856 ℃', solubility: '不溶于单一酸', ph: '—', corrosive: false, volatile: false },
+    uses: ['首饰/投资', '芯片键合线', '航天反射镀层'], dosage: '—',
+    reactions: [{ eq: 'Au + HNO₃ + 4HCl → HAuCl₄ + NO↑ + 2H₂O', note: '唯有王水能溶金——点石成金的梦想在电化学里变成了电镀真金。' }],
+    storage: '—', spill: '—', waste: '回收',
+    teaching: '延展性之王：1 g 金能拉成 3 km 长的金丝、锤出 1 m² 金箔——炼金术士追寻千年，化学最终解释了它的"惰性贵气"。',
+    grade_level: 1, tags: ['金属', '贵金属', '历史']
+  }),
+  br2: C({
+    id: 'br2', name: '溴', en: 'Bromine', formula: 'Br₂', mw: 159.81, cas: '7726-95-6',
+    smiles: 'BrBr',
+    appearance: '深红棕色挥发性液体（唯一液态非金属单质）', odor: '强烈刺激性恶臭',
+    props: { density: '3.12 g/cm³', mp: '-7.2 ℃', bp: '58.8 ℃', solubility: '微溶于水（溴水橙色）', ph: '—', corrosive: true, volatile: true },
+    ghs: { pictos: ['GHS05', 'GHS06', 'GHS07', 'GHS09'], signal: '危险', h: ['H314：造成严重皮肤灼伤', 'H331：吸入有毒', 'H400：对水生生物毒性极大'], p: ['P280：戴防护手套/护目镜', 'P261：避免吸入'] },
+    uses: ['阻燃剂', '感光材料（AgBr）', '医药中间体'], dosage: '—',
+    reactions: [
+      { eq: 'Br₂ + 2KI → 2KBr + I₂', note: '卤素单质氧化性：Cl₂ > Br₂ > I₂ 的实验证据。' },
+      { eq: 'C₆H₆ + Br₂ →(催化剂) C₆H₅Br + HBr', note: '苯的取代反应经典案例。' }
+    ],
+    storage: '棕色瓶水封、阴凉专柜', spill: '碱液吸收、通风', waste: '还原后处理',
+    teaching: '唯一常温液态的非金属单质——红棕色蒸气"溴"的汉字从"水"就暗示了它的状态。',
+    grade_level: 3, tags: ['非金属', '卤素', '有毒']
+  }),
+  p_white: C({
+    id: 'p_white', name: '白磷', en: 'White phosphorus', formula: 'P₄', mw: 123.90, cas: '12185-10-3',
+    smiles: null,
+    appearance: '白色蜡状固体（见光变黄）', odor: '蒜臭味',
+    props: { density: '1.82 g/cm³', mp: '44.1 ℃', bp: '280.5 ℃', solubility: '不溶于水，溶于 CS₂', ph: '—', corrosive: false, volatile: false },
+    ghs: { pictos: ['GHS02', 'GHS06', 'GHS09'], signal: '危险', h: ['H250：暴露在空气中会自燃', 'H300：吞咽致命', 'H400：对水生生物毒性极大'], p: ['P210：远离热源', 'P280：戴防护手套'] },
+    uses: ['火柴（历史）', '科学史教学案例'], dosage: '—（仅展示，严禁操作）',
+    reactions: [{ eq: '4P + 5O₂ → 2P₂O₅', note: '着火点仅 40 ℃，在空气中自燃——必须保存在水下。' }],
+    storage: '浸没于水中，避光', spill: '水下回收', waste: '按危废处理',
+    teaching: '白磷与红磷是同一种元素的两种"性格"——分子结构（P₄ 正四面体 vs 长链）决定一切。历史上火柴、磷中毒与"鬼火"都是它的故事。（仅教学展示，严禁取用）',
+    grade_level: 3, tags: ['非金属', '有毒', '同素异形体']
+  }),
+  h2s: C({
+    id: 'h2s', name: '硫化氢', en: 'Hydrogen sulfide', formula: 'H₂S', mw: 34.08, cas: '7783-06-4',
+    smiles: 'S',
+    appearance: '无色气体', odor: '臭鸡蛋气味',
+    props: { density: '1.54 g/L（比空气大）', mp: '-85.5 ℃', bp: '-60.3 ℃', solubility: '溶于水（氢硫酸）', ph: '—（弱酸性）', corrosive: true, volatile: true },
+    ghs: { pictos: ['GHS02', 'GHS06', 'GHS09'], signal: '危险', h: ['H225：高度易燃液体和蒸气', 'H330：吸入致命', 'H400：对水生生物毒性极大'], p: ['P261：避免吸入', 'P304+P340：移至空气新鲜处'] },
+    uses: ['气味警示教学（下水道）', '硫化物制备'], dosage: '—',
+    reactions: [{ eq: 'H₂S + CuSO₄ → CuS↓ + H₂SO₄', note: '黑色 CuS 沉淀——湿法除去 H₂S。' }],
+    storage: '密闭通风', spill: '通风撤离', waste: '碱液吸收',
+    teaching: '"闻到臭鸡蛋味立即撤并通风"——下水道、沼气池事故的元凶就是它。嗅觉疲劳会让危险"隐形"，绝不能靠鼻子判断浓度。',
+    grade_level: 2, tags: ['气体', '有毒']
+  }),
+  /* ————— 有机物（扩容） ————— */
+  c2h4: C({
+    id: 'c2h4', name: '乙烯', en: 'Ethylene', formula: 'C₂H₄', mw: 28.05, cas: '74-85-1',
+    smiles: 'C=C',
+    appearance: '无色气体', odor: '微甜气味',
+    props: { density: '1.26 g/L（比空气略小）', mp: '-169 ℃', bp: '-103.7 ℃', solubility: '难溶于水', ph: '—', corrosive: false, volatile: true },
+    ghs: { pictos: ['GHS02', 'GHS04'], signal: '危险', h: ['H220：极易燃气体', 'H280：内含加压气体'], p: ['P210：远离热源/火花/明火'] },
+    uses: ['植物催熟剂', '聚乙烯塑料原料', '水果保鲜对照实验'], dosage: '—',
+    reactions: [
+      { eq: 'C₂H₄ + Br₂ → CH₂BrCH₂Br', note: '溴水褪色——加成反应与饱和/不饱和的判据。' },
+      { eq: 'nCH₂=CH₂ →(催化剂) [CH₂-CH₂]n', note: '聚合成聚乙烯——塑料袋、保鲜膜的来源。' }
+    ],
+    storage: '钢瓶', spill: '通风', waste: '—',
+    teaching: '一个苹果释放的乙烯能催熟整箱水果——"水果催熟剂"就藏在果篮里。产量是衡量一个国家石油化工实力的标志。',
+    grade_level: 2, tags: ['有机物', '气体', '塑料']
+  }),
+  c2h2: C({
+    id: 'c2h2', name: '乙炔', en: 'Acetylene', formula: 'C₂H₂', mw: 26.04, cas: '74-86-2',
+    smiles: 'C#C',
+    appearance: '无色气体（纯品微带蒜臭）', odor: '微弱气味',
+    props: { density: '1.17 g/L', mp: '-80.8 ℃（升华）', bp: '-84 ℃', solubility: '微溶于水（溶于丙酮）', ph: '—', corrosive: false, volatile: true },
+    ghs: { pictos: ['GHS02', 'GHS04'], signal: '危险', h: ['H220：极易燃气体', 'H280：内含加压气体'], p: ['P210：远离热源/火花/明火'] },
+    uses: ['氧炔焰切割金属（3000 ℃+）', '化工原料'], dosage: '—',
+    reactions: [
+      { eq: 'CaC₂ + 2H₂O → Ca(OH)₂ + C₂H₂↑', note: '电石遇水制乙炔——饱和食盐水可减缓反应速率。' },
+      { eq: '2C₂H₂ + 5O₂ → 4CO₂ + 2H₂O', note: '氧炔焰温度最高达 3000 ℃ 以上——最热的化学火焰。' }
+    ],
+    storage: '溶解于丙酮的专用钢瓶', spill: '通风禁火', waste: '—',
+    teaching: '三键 vs 双键 vs 单键——键能越大分子越"活泼"还是越"稳定"？乙炔既易加成又燃烧最热，值得细品。',
+    grade_level: 2, tags: ['有机物', '气体', '易燃']
+  }),
+  c6h6: C({
+    id: 'c6h6', name: '苯', en: 'Benzene', formula: 'C₆H₆', mw: 78.11, cas: '71-43-2',
+    smiles: 'c1ccccc1',
+    appearance: '无色有特殊气味液体', odor: '特殊芳香气味',
+    props: { density: '0.88 g/cm³', mp: '5.5 ℃', bp: '80.1 ℃', solubility: '不溶于水（优良有机溶剂）', ph: '—', corrosive: false, volatile: true },
+    ghs: { pictos: ['GHS02', 'GHS06', 'GHS07', 'GHS08'], signal: '危险', h: ['H225：高度易燃液体和蒸气', 'H301：吞咽有毒', 'H350：可能致癌', 'H315：造成皮肤刺激'], p: ['P210：远离火源', 'P261：避免吸入', 'P201：使用前取得特别指示'] },
+    uses: ['化工基础原料（合成纤维/塑料/橡胶）', '有机溶剂（已被限制）'], dosage: '—（教学只用模型）',
+    reactions: [
+      { eq: 'C₆H₆ + Br₂ →(FeBr₃) C₆H₅Br + HBr', note: '取代反应——苯环的"稳定优先"。' },
+      { eq: '2C₆H₆ + 15O₂ → 12CO₂ + 6H₂O', note: '燃烧冒浓黑烟——含碳量高的标志。' }
+    ],
+    storage: '易燃品专柜', spill: '砂土吸附、通风禁火', waste: '按危废处理',
+    teaching: '凯库勒的"蛇咬尾巴"梦——苯环的发现史是科学想象力的传奇。苯致癌，中学实验只用球棍模型，不做真苯实验。',
+    grade_level: 3, tags: ['有机物', '芳香烃', '有毒']
+  }),
+  etac: C({
+    id: 'etac', name: '乙酸乙酯', en: 'Ethyl acetate', formula: 'CH₃COOC₂H₅', mw: 88.11, cas: '141-78-6',
+    smiles: 'CCOC(C)=O',
+    appearance: '无色透明液体', odor: '愉快的水果香味',
+    props: { density: '0.90 g/cm³', mp: '-83.6 ℃', bp: '77.1 ℃', solubility: '微溶于水（分层）', ph: '—', corrosive: false, volatile: true },
+    ghs: { pictos: ['GHS02', 'GHS07'], signal: '危险', h: ['H225：高度易燃液体和蒸气', 'H319：造成严重眼刺激'], p: ['P210：远离火源', 'P305+P351+P338：入眼立即冲洗'] },
+    uses: ['香料/指甲油溶剂', '实验室萃取剂'], dosage: '—',
+    reactions: [
+      { eq: 'CH₃COOH + C₂H₅OH ⇌(浓硫酸Δ) CH₃COOC₂H₅ + H₂O', note: '酯化反应——"酸脱羟基醇脱氢"，乙醇先酯化再脱水。' },
+      { eq: 'CH₃COOC₂H₅ + NaOH →(Δ) CH₃COONa + C₂H₅OH', note: '皂化（水解）——酯的逆反应。' }
+    ],
+    storage: '易燃品专柜避光', spill: '砂土吸附', waste: '回收',
+    teaching: '导管口在饱和碳酸钠液面上方而不插入液下——防倒吸；碳酸钠溶液还能吸收乙醇、中和乙酸，让香味更"纯"。',
+    grade_level: 2, tags: ['有机物', '酯']
+  }),
+  urea: C({
+    id: 'urea', name: '尿素', en: 'Urea', formula: 'CO(NH₂)₂', mw: 60.06, cas: '57-13-6',
+    smiles: 'NC(=O)N',
+    appearance: '白色晶体', odor: '无气味（吸湿）',
+    props: { density: '1.32 g/cm³', mp: '132.7 ℃', bp: '—（分解）', solubility: '极易溶于水（吸热）', ph: '中性', corrosive: false, volatile: false },
+    uses: ['含氮量最高的常用氮肥（46%）', '护肤霜保湿成分', '车用尿素（尾气处理）'], dosage: '按农艺规程',
+    reactions: [{ eq: 'CO(NH₂)₂ + 3H₂O →(脲酶) 2NH₃↑ + CO₂ + 2H₂O', note: '在土壤中缓慢水解释放氨——"缓释"肥效的化学。' }],
+    storage: '密封防潮', spill: '清扫', waste: '—',
+    teaching: '1828 年维勒用无机物氰酸铵合成了尿素——第一次打破"有机物只能来自生命体"的"生命力论"，化学史上里程碑。',
+    grade_level: 1, tags: ['有机物', '氮肥', '历史']
+  }),
+  paraffin: C({
+    id: 'paraffin', name: '石蜡', en: 'Paraffin wax', formula: 'C₂₅H₅₂（代表式）', mw: 352.00, cas: '8002-74-2',
+    smiles: null,
+    appearance: '白色半透明蜡状固体', odor: '无气味',
+    props: { density: '0.90 g/cm³', mp: '50–65 ℃', bp: '>300 ℃', solubility: '不溶于水', ph: '—', corrosive: false, volatile: false },
+    uses: ['蜡烛主料', '食品包装蜡纸', '保温封蜡'], dosage: '—',
+    reactions: [{ eq: 'C₂₅H₅₂ + 38O₂ →(点燃) 25CO₂ + 26H₂O', note: '蜡烛燃烧——烛芯焰心温度不同，"外焰最热"的实验依据。' }],
+    storage: '避热', spill: '凝固后清除', waste: '—',
+    teaching: '蜡烛燃烧为什么有黑烟？——供氧不足时碳不完全燃烧。法拉第《一支蜡烛的化学史》就从它讲起。',
+    grade_level: 0, tags: ['有机物', '烃']
+  }),
+  oil: C({
+    id: 'oil', name: '食用油', en: 'Edible vegetable oil', alias: ['植物油脂'], formula: '油脂（甘油三酯）', mw: 880.00, cas: null,
+    smiles: null,
+    appearance: '淡黄色油状液体', odor: '各有特征气味（花生/大豆）',
+    props: { density: '0.91–0.93 g/cm³（比水轻！）', mp: '-10~16 ℃', bp: '>300 ℃（易冒烟）', solubility: '不溶于水', ph: '—', corrosive: false, volatile: false },
+    uses: ['烹调', '油脂化学（皂化）原料', '浮沉实验（ρ<1）'], dosage: '—',
+    reactions: [{ eq: '油脂 + NaOH →(Δ) 甘油 + 高级脂肪酸钠', note: '皂化反应——古代"草木灰洗油污"到现代肥皂的化学。' }],
+    storage: '避光密封防哈败', spill: '勿倒入下水道（凝固堵塞），吸油棉处理', waste: '按餐厨垃圾处理',
+    teaching: '为什么油永远浮在水面上？——密度 0.91 < 1.00。厨房里的"油水分层"就是天然的分液演示。',
+    grade_level: 0, tags: ['有机物', '食品']
+  }),
+  /* ————— 指示剂与试纸（扩容） ————— */
+  btb: C({
+    id: 'btb', name: '溴百里酚蓝', en: 'Bromothymol blue', alias: ['BTB'], formula: 'C₂₇H₂₈Br₂O₅S', mw: 624.38, cas: '76-59-5',
+    smiles: null,
+    appearance: '近白色粉末（水/醇溶液黄—蓝）', odor: '无气味',
+    props: { density: '—', mp: '202 ℃', bp: '—', solubility: '微溶于水（钠盐易溶）', ph: '变色范围 6.0–7.6（黄—绿—蓝）', corrosive: false, volatile: false },
+    ghs: { pictos: [], signal: '', h: [], p: [] },
+    uses: ['呼吸实验 CO₂ 检测（变黄）', '水族 pH 监测', '光合作用演示'], dosage: '几滴',
+    reactions: [{ eq: 'BTB（蓝） + CO₂/H₂O → 变黄', note: '向 BTB 蓝色溶液中吹气变黄——呼出气含 CO₂ 的直接证据。' }],
+    storage: '密封避光', spill: '回收', waste: '回收',
+    teaching: 'BTB 的变色范围恰好跨过中性点 7——"人的呼吸会让水变酸"的视觉证据，生物化学跨界的明星指示剂。',
+    grade_level: 1, tags: ['指示剂']
+  }),
+  ki_starch_paper: C({
+    id: 'ki_starch_paper', name: '淀粉碘化钾试纸', en: 'Potassium iodide–starch paper', alias: ['KI-淀粉试纸'], formula: '—', mw: null, cas: null,
+    smiles: null,
+    appearance: '白色纸条', odor: '无气味',
+    props: { density: '—', mp: '—', bp: '—', solubility: '—', ph: '—', corrosive: false, volatile: false },
+    uses: ['检验 Cl₂/Br₂ 等氧化性气体（变蓝）'], dosage: '每次一小段',
+    reactions: [{ eq: 'Cl₂ + 2KI → 2KCl + I₂（I₂ 遇淀粉变蓝）', note: '试纸湿润后接触气体——变蓝即证明有氧化性卤素气。' }],
+    storage: '密封避光防潮', spill: '—', waste: '—',
+    teaching: '试纸要先润湿再检测气体——"湿"才能让 KI 溶解并反应。干燥的试纸对氯气无动于衷。',
+    grade_level: 1, tags: ['检验', '试纸']
   })
 };
 

@@ -34,7 +34,11 @@ export const store = {
   state: load(),
 
   save() {
-    try { localStorage.setItem(KEY, JSON.stringify(this.state)); } catch (e) { /* storage full */ }
+    try {
+      this.state.updatedAt = Date.now();
+      localStorage.setItem(KEY, JSON.stringify(this.state));
+    } catch (e) { /* storage full */ }
+    document.dispatchEvent(new CustomEvent('alchemist:saved'));
   },
 
   setPersona(p) { this.state.persona = p; this.save(); },

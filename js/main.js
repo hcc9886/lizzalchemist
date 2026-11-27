@@ -13,6 +13,7 @@ import { CHEMICALS, CHEM_COUNT, chemById, chemSearch, ghsHTML } from './data/che
 import { APPARATUS_DEFS, APPARATUS_TREE } from './data/apparatus.js';
 import { hydrateChem, bulkHydrate } from './data/pubchem.js';
 import { makeQuiz5 } from './data/practice.js';
+import * as sync from './sync.js';
 
 const view = document.getElementById('view');
 let expCleanup = null;
@@ -1001,3 +1002,175 @@ function render() {
 
 window.addEventListener('hashchange', render);
 render();
+
+/* ---------- 账号与多平台云同步 ---------- */
+
+sync.bindSync({
+  snapshot: () => JSON.parse(JSON.stringify(store.state)),
+  restore(data) {
+    Object.assign(store.state, data);
+    store.save();
+  }
+});
+sync.boot();
+
+const acctBtn = document.getElementById('account-btn');
+
+function dotCls() {
+  const s = sync.statusOf();
+  return s.status === 'ok' ? 'ok' : s.status === 'error' ? 'err' : s.status === 'syncing' ? 'busy' : '';
+}
+
+function refreshAcctBtn() {
+  const m = sync.me();
+  document.getElementById('acct-label').textContent = m ? m.email.split('@')[0] : '登录';
+  document.getElementById('acct-dot').className = 'acct-dot ' + dotCls();
+}
+window.addEventListener('alchemist:sync', refreshAcctBtn);
+refreshAcctBtn();
+
+acctBtn.addEventListener('click', () => { sync.me() ? openAcctPanel() : openAcctAuth(); });
+
+function syncText(s) {
+  if (!s.configured) return '纯本地模式：进度保存在这台设备的浏览器里';
+  if (!s.email) return '云同步已就绪，登录后即可跨设备同步';
+  return s.msg || '已连接';
+}
+
+const SQL_GUIDE = `create table if not exists public.progress (
+  user_id uuid primary key references auth.users on delete cascade,
+  data jsonb not null default '{}'::jsonb,
+  updated_at timestamptz not null default now()
+);
+alter table public.progress enable row level security;
+
+create policy "own select" on public.progress
+  for select using (auth.uid() = user_id);
+create policy "own insert" on public.progress
+  for insert with check (auth.uid() = user_id);
+create policy "own update" on public.progress
+  for update using (auth.uid() = user_id);`;
+
+const CFG_PANEL = `
+  <details class="acct-panel"><summary>站长配置（Supabase URL / 密钥 / 建表 SQL）</summary>
+    <p class="muted" style="font-size:12px;margin:8px 0 6px">本机覆盖配置（优先于内置 config.js）。supabase.com → 项目 → Settings → API：</p>
+    <div class="acct-form">
+      <input id="cfg-url" type="url" placeholder="https://xxxx.supabase.co" value="${sync.currentCfg().url}">
+      <input id="cfg-key" type="text" placeholder="publishable / anon key" value="${sync.currentCfg().key}">
+      <div style="display:flex;gap:8px;margin-top:2px">
+        <button class="btn small primary" id="cfg-save">保存并连接</button>
+        <button class="btn small" id="cfg-clear">清除本机覆盖</button>
+      </div>
+    </div>
+    <p class="muted" style="font-size:12px;margin:12px 0 0">首次使用请在 Supabase Dashboard → SQL Editor 执行一次：</p>
+    <pre class="acct-sql">${SQL_GUIDE}</pre>
+  </details>`;
+
+function wireCfgPanel(mask, after) {
+  const save = mask.querySelector('#cfg-save');
+  if (!save) return;
+  save.addEventListener('click', () => {
+    const url = mask.querySelector('#cfg-url').value.trim();
+    const key = mask.querySelector('#cfg-key').value.trim();
+    if (!/^https:\/\/.+/.test(url) || key.length < 20) { toast('URL 需以 https:// 开头，key 请完整粘贴'); return; }
+    sync.setCfg(url, key);
+    toast('配置已保存，正在连接…');
+    after();
+  });
+  mask.querySelector('#cfg-clear').addEventListener('click', () => {
+    sync.clearCfg();
+    toast('已清除本机覆盖，改用内置配置');
+    after();
+  });
+}
+
+function openAcctAuth() {
+  const s = sync.statusOf();
+  const mask = openModal(`
+    <h3>账号 · 云同步</h3>
+    <div class="sync-stat"><i class="acct-dot ${dotCls()}"></i><span>${syncText(s)}</span></div>
+    <div class="acct-tabs">
+      <button class="btn small primary" data-tab="login">登 录</button>
+      <button class="btn small" data-tab="signup">注 册</button>
+    </div>
+    <div class="acct-form">
+      <input id="ac-email" type="email" placeholder="邮箱（仅用于登录学习平台）" autocomplete="username">
+      <input id="ac-pw" type="password" placeholder="密码（至少 6 位）" autocomplete="current-password">
+      <div class="acct-msg" id="ac-msg"></div>
+      <button class="btn primary" id="ac-go">登录并开始同步</button>
+      <p class="muted" style="font-size:12px;margin:2px 0 0">注册即用，无需邮箱验证。同一账号在电脑 / 平板 / 手机浏览器登录，学习进度自动同步。</p>
+    </div>
+    ${CFG_PANEL}
+  `);
+  let mode = 'login';
+  mask.querySelector('.acct-tabs').addEventListener('click', e => {
+    const b = e.target.closest('[data-tab]');
+    if (!b) return;
+    mode = b.dataset.tab;
+    mask.querySelectorAll('[data-tab]').forEach(x => x.classList.toggle('primary', x === b));
+    mask.querySelector('#ac-go').textContent = mode === 'login' ? '登录并开始同步' : '注册并开始同步';
+    msgEl.textContent = ''; msgEl.className = 'acct-msg';
+  });
+  const msgEl = mask.querySelector('#ac-msg');
+  const msg = (t, cls) => { msgEl.textContent = t; msgEl.className = 'acct-msg ' + (cls || ''); };
+  mask.querySelector('#ac-go').addEventListener('click', async () => {
+    const email = mask.querySelector('#ac-email').value.trim();
+    const pw = mask.querySelector('#ac-pw').value;
+    if (!/^\S+@\S+\.\S+$/.test(email)) return msg('邮箱格式不对', 'err');
+    if (pw.length < 6) return msg('密码至少 6 位', 'err');
+    const btn = mask.querySelector('#ac-go');
+    btn.disabled = true;
+    msg(mode === 'login' ? '登录中…' : '注册中…');
+    try {
+      const r = mode === 'login' ? await sync.signIn(email, pw) : await sync.signUp(email, pw);
+      if (r && r.needsConfirm) {
+        msg('注册成功！请先到邮箱点确认链接，再回来登录', 'ok');
+        btn.disabled = false;
+        return;
+      }
+      toast(mode === 'login' ? '欢迎回来！' : '注册成功，开始云同步');
+      await sync.boot();
+      closeModal();
+      openAcctPanel();
+    } catch (e) {
+      msg(sync.fmtErr(e), 'err');
+      btn.disabled = false;
+    }
+  });
+  wireCfgPanel(mask, () => { closeModal(); openAcctAuth(); });
+}
+
+function openAcctPanel() {
+  const m = sync.me();
+  const s = sync.statusOf();
+  const mask = openModal(`
+    <h3>账号 · 云同步</h3>
+    <p><b style="color:var(--gold2)">${m.email}</b></p>
+    <div class="sync-stat"><i class="acct-dot ${dotCls()}"></i><span>${syncText(s)}${s.lastSyncTs ? ' · 上次同步 ' + new Date(s.lastSyncTs).toLocaleTimeString('zh-CN') : ''}</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">
+      <button class="btn primary small" id="ac-sync">立即同步</button>
+      <button class="btn small" id="ac-up">上传本机进度</button>
+      <button class="btn small" id="ac-down">下载云端进度</button>
+      <button class="btn small" id="ac-out">退出登录</button>
+    </div>
+    <p class="muted" style="font-size:12px">平时全自动：改动约 5 秒后自动上传，换设备登录自动拉取；冲突按时间新者胜，覆盖本机前自动备份。</p>
+    ${CFG_PANEL}
+  `);
+  mask.querySelector('#ac-sync').addEventListener('click', async () => {
+    try { await sync.syncNow(); toast('同步完成'); } catch (e) { toast(sync.fmtErr(e)); }
+  });
+  mask.querySelector('#ac-up').addEventListener('click', async () => {
+    if (!confirm('用本机进度覆盖云端？（云端旧版本将被替换）')) return;
+    try { await sync.forcePush(); toast('已上传'); } catch (e) { toast(sync.fmtErr(e)); }
+  });
+  mask.querySelector('#ac-down').addEventListener('click', async () => {
+    if (!confirm('用云端进度覆盖本机？（当前本机进度会先自动备份）')) return;
+    try { await sync.forcePull(); toast('已恢复云端进度'); } catch (e) { toast(sync.fmtErr(e)); }
+  });
+  mask.querySelector('#ac-out').addEventListener('click', async () => {
+    await sync.signOut();
+    toast('已退出登录（本机进度保留）');
+    openAcctAuth();
+  });
+  wireCfgPanel(mask, () => { closeModal(); openAcctPanel(); });
+}
