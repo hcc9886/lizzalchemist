@@ -7,6 +7,7 @@ try { // 品牌改名迁移：旧 alchemia 存档搬到新键
 const DEFAULT = {
   persona: null,            // 'zero' | 'middle' | 'college' | 'adult' | 'teacher'
   diagnostic: null,         // {version, recommendedLevel, correct, total, scores, ts}
+  stories: {},              // storyId -> {visited, phase, completed, ts, completedAt}
   lessonsDone: {},          // unitId -> true
   quiz: {},                 // unitId -> {best, ts}
   notebook: [],             // [{ts, exp, title, params, results}]
@@ -47,6 +48,34 @@ export const store = {
   setDiagnostic(result) {
     this.state.diagnostic = Object.assign({ ts: Date.now() }, result);
     this.save();
+  },
+
+  visitStory(id) {
+    if (!this.state.stories[id]) {
+      this.state.stories[id] = { visited: true, phase: 'intro', ts: Date.now() };
+      this.save();
+    }
+    return this.state.stories[id];
+  },
+
+  setStoryPhase(id, phase) {
+    const story = this.visitStory(id);
+    story.phase = phase;
+    this.save();
+  },
+
+  completeStory(id) {
+    const story = this.visitStory(id);
+    const first = !story.completed;
+    story.completed = true;
+    story.phase = 'complete';
+    story.completedAt = story.completedAt || Date.now();
+    this.save();
+    return first;
+  },
+
+  storyCompletedCount() {
+    return Object.values(this.state.stories).filter(story => story && story.completed).length;
   },
 
   visit(id) { this.state.visited[id] = true; this.save(); },

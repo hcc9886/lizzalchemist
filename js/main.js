@@ -3,6 +3,7 @@ import { achieve } from './expkit.js';
 import { ACHIEVEMENTS, achById } from './data/achievements.js';
 import { GLOSSARY } from './data/glossary.js';
 import { TIMELINE } from './data/timeline.js';
+import { STORIES, storyById, isStoryUnlocked, storyEvidence } from './data/stories.js';
 import { SYMBOLS } from './data/symbols.js';
 import { TRACKS, ALL_UNITS, LEVELS, unitById, trackOf, nextUnit, prevUnit, PERSONA_RECOMMEND, levelById, unitsAtLevel, unitLevel } from './data/curriculum.js';
 import { QUIZZES } from './data/quizzes.js';
@@ -19,6 +20,10 @@ import * as sync from './sync.js';
 const view = document.getElementById('view');
 let expCleanup = null;
 let lastContext = {};
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
+}
 
 /* ---------- shared helpers ---------- */
 
@@ -175,6 +180,7 @@ function viewHome() {
     <div class="grid g3">
       ${[
         ['起源时间轴', '10 个历史阶段，从人类与火到计算化学', '#/timeline'],
+        ['历史剧情关卡', '波义耳、拉瓦锡与燃素说：用实验记录推动三章科学革命', '#/story'],
         ['炼金图鉴', '符号解码器 + 术语库 + 实验速查，一站查阅', '#/glossary'],
         ['课程系统', `四线 ${s.total} 单元，每单元六层教学 + FAQ + 测验`, '#/learn'],
         ['虚拟实验室', `${Object.keys(EXPERIMENTS).length} 个实验：目标清单、步骤向导、拖拽操作与方程式横幅`, '#/lab'],
@@ -207,6 +213,11 @@ function viewTimeline() {
     <div class="crumb"><a href="#/home">首页</a> / 起源时间轴</div>
     <h1>化学与炼金术起源时间轴</h1>
     <p class="muted">从人类第一次控制火，到在电脑里计算分子。点击每个阶段展开详情、关键人物与思考题。</p>
+    <div class="panel gold story-entry">
+      <h3>历史剧情关卡 · 气体革命三章</h3>
+      <p>从波义耳的定量测量，到拉瓦锡的质量账本，再亲手审查燃素说。剧情、实验记录与史实解读会依次解锁。</p>
+      <p><a class="btn small primary" href="#/story">进入剧情线</a> <span class="badge gold">${store.storyCompletedCount()}/${STORIES.length} 章已完成</span></p>
+    </div>
     <div class="tl">
       ${TIMELINE.map((s, i) => `
       <div class="tl-item" data-i="${i}">
@@ -214,6 +225,7 @@ function viewTimeline() {
         <h3>${s.title}</h3>
         <div class="tl-body">${s.summary}</div>
         <button class="btn small" data-toggle="${i}" style="margin-top:10px">展开详情</button>
+        ${s.id === 'gas' ? '<a class="btn small ghost" href="#/story" style="margin-top:10px">进入历史剧情：气体革命 →</a>' : ''}
         <div class="tl-extra">
           ${s.details.map(d => `<div>${d}</div>`).join('')}
           <h4>关键人物</h4><ul>${s.people.map(p => `<li><b>${p.n}</b> — ${p.d}</li>`).join('')}</ul>
@@ -229,6 +241,102 @@ function viewTimeline() {
     item.classList.toggle('open');
     btn.textContent = item.classList.contains('open') ? '收起详情' : '展开详情';
   }));
+}
+
+function storyDataset(dataset) {
+  return `<div class="story-data"><h3>${dataset.title}</h3><div class="table-wrap"><table><thead><tr>${dataset.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${dataset.rows.map(row => `<tr>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+}
+
+function viewStoryIndex() {
+  const completed = store.storyCompletedCount();
+  view.innerHTML = `
+    <div class="crumb"><a href="#/home">首页</a> / 历史剧情关卡</div>
+    <h1>气体革命 · 历史剧情关卡</h1>
+    <p class="muted">三章连续故事：先进入历史现场，再完成时代任务，用实验本中的真实记录回答问题，最后读懂理论为什么改变。</p>
+    <div class="story-progress">
+      <div><b>剧情进度</b><span>${completed}/${STORIES.length} 章已完成</span></div>
+      <div class="story-progress-track"><i style="width:${completed / STORIES.length * 100}%"></i></div>
+      <p>关卡按顺序解锁；已完成的章节可以重访。任务证据使用你在虚拟实验中记录的数据，并随存档跨设备同步。</p>
+    </div>
+    <div class="story-grid">
+      ${STORIES.map((story, index) => {
+        const unlocked = isStoryUnlocked(story, store.state.stories);
+        const done = !!store.state.stories[story.id]?.completed;
+        const status = done ? '已完成 · 可重访' : unlocked ? '已解锁' : '完成上一章后解锁';
+        const body = `<span class="story-number">${story.numeral}</span><span class="story-era">${story.era}</span><h2>${story.title}</h2><p>${story.subtitle}</p><span class="story-status ${done ? 'done' : unlocked ? 'open' : 'locked'}">${status}</span>${!unlocked && index > 0 ? `<span class="story-prev">上一章：${STORIES[index - 1].title}</span>` : ''}`;
+        return unlocked ? `<a class="story-card ${done ? 'completed' : ''}" href="#/story/${story.id}">${body}</a>` : `<div class="story-card locked" aria-disabled="true">${body}</div>`;
+      }).join('')}
+    </div>
+    <div class="panel gold story-entry">
+      <h3>这不是“历史背景装饰”</h3>
+      <p>每一关都要求可核对的证据：受控变量、定量读数或产物变化。你会看到旧理论曾经解释了什么，也会看到精确测量怎样暴露它的裂缝。</p>
+      <p><a class="btn small" href="#/timeline">回到完整时间轴</a> <a class="btn small ghost" href="#/notebook">查看实验本</a></p>
+    </div>`;
+}
+
+function viewStory(id) {
+  const story = storyById(id);
+  if (!story) { view.innerHTML = '<div class="panel">剧情关卡不存在。</div>'; return; }
+  if (!isStoryUnlocked(story, store.state.stories)) {
+    const index = STORIES.findIndex(item => item.id === story.id);
+    view.innerHTML = `<div class="crumb"><a href="#/story">历史剧情关卡</a> / ${story.title}</div><div class="panel story-locked"><h1>这一章尚未解锁</h1><p>请先完成「${STORIES[index - 1].title}」，再用证据开启下一段历史。</p><p><a class="btn primary" href="#/story/${STORIES[index - 1].id}">返回上一章</a> <a class="btn ghost" href="#/story">查看剧情进度</a></p></div>`;
+    return;
+  }
+
+  const progress = store.visitStory(id);
+  let selected = null;
+  let feedback = '';
+  const phases = ['intro', 'mission', 'question', 'complete'];
+  const phaseLabels = { intro: '剧情引入', mission: '时代任务', question: '证据问答', interpretation: '史实解读', complete: '史实解读' };
+
+  function paint() {
+    let phase = [...phases, 'interpretation'].includes(progress.phase) ? progress.phase : progress.completed ? 'complete' : 'intro';
+    if ((phase === 'question' || phase === 'interpretation') && !storyEvidence(story, store.state.notebook).ready) phase = 'mission';
+    const phaseIndex = phase === 'interpretation' ? 3 : phases.indexOf(phase);
+    let content = '';
+
+    if (phase === 'intro') {
+      content = `<section class="story-panel"><span class="story-kicker">第 ${story.order} 章 · ${story.era}</span><h2>${story.subtitle}</h2><p class="story-lead">${story.intro}</p><div class="story-context">${story.context.map(item => `<p>${item}</p>`).join('')}</div><div class="story-actions"><button class="btn primary" id="story-accept">接受时代任务 →</button><a class="btn ghost" href="#/timeline">回到时间轴</a></div></section>`;
+    } else if (phase === 'mission') {
+      const evidence = storyEvidence(story, store.state.notebook);
+      const exp = EXPERIMENTS[story.mission.experiment];
+      content = `<section class="story-panel"><span class="story-kicker">时代任务 · ${story.era}</span><h2>${story.mission.title}</h2><p class="story-lead">${story.mission.brief}</p><div class="story-mission"><h3>实验台指令</h3><p>${story.mission.recordHint}</p><div class="story-actions"><a class="btn primary" href="#/exp/${story.mission.experiment}?return=story/${story.id}">进入「${exp.title}」</a><a class="btn ghost" href="#/notebook">查看实验本</a></div><p class="muted">完成操作后，务必点击实验中的“记录数据到实验本”，再返回本关。</p></div><div class="story-evidence ${evidence.ready ? 'ready' : ''}"><h3>${evidence.ready ? '证据已齐' : '等待实验记录'}</h3><p>${escapeHtml(evidence.detail)}</p>${evidence.rows.length ? `<div class="table-wrap"><table><thead><tr>${evidence.columns.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead><tbody>${evidence.rows.map(row => `<tr>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : ''}</div><div class="story-actions"><button class="btn primary" id="story-read" ${evidence.ready ? '' : 'disabled'}>解读证据 →</button></div></section>`;
+    } else if (phase === 'question') {
+      content = `<section class="story-panel"><span class="story-kicker">证据问答</span><h2>${story.question.q}</h2>${storyDataset(story.dataset)}<div class="story-options">${story.question.opts.map((option, index) => `<button class="story-choice ${selected === index ? 'selected' : ''}" data-answer="${index}"><b>${'ABCD'[index]}</b><span>${option}</span></button>`).join('')}</div>${feedback ? `<p class="story-feedback wrong" role="alert">${feedback}</p>` : ''}<div class="story-actions"><button class="btn primary" id="story-submit" ${selected === null ? 'disabled' : ''}>提交证据解释</button><a class="btn ghost" href="#/exp/${story.mission.experiment}?return=story/${story.id}">返回实验核对</a></div></section>`;
+    } else if (phase === 'interpretation') {
+      content = `<section class="story-panel story-reading"><span class="story-kicker">证据成立 · 历史解释更新</span><h2>${story.interpretation.title}</h2>${story.interpretation.paragraphs.map(p => `<p>${p}</p>`).join('')}<div class="story-takeaway"><b>本章结论</b><p>${story.interpretation.takeaway}</p></div><div class="story-actions"><button class="btn primary" id="story-finish">完成本关${STORIES[story.order] ? '并解锁下一章' : ''}</button><a class="btn ghost" href="#/unit/${story.relatedUnit}">进入相关课程</a></div></section>`;
+    } else {
+      const next = STORIES[story.order];
+      content = `<section class="story-panel story-complete"><span class="story-kicker">第 ${story.order} 章 · 已完成</span><h2>你已经改写了这一章的科学账本</h2><p class="story-lead">${story.interpretation.takeaway}</p><div class="story-takeaway"><b>留下的证据</b><p>${story.mission.readyText}</p></div>${next ? `<p>新章节已解锁：<a class="btn primary" href="#/story/${next.id}">${next.numeral} · ${next.title} →</a></p>` : '<p>三章剧情全部完成。你已经走过从定量气体研究到氧化学说确立的关键历程。</p>'}<div class="story-actions"><button class="btn ghost" id="story-replay">重玩本关</button><a class="btn ghost" href="#/story">查看剧情进度</a><a class="btn ghost" href="#/unit/${story.relatedUnit}">巩固相关课程</a></div></section>`;
+    }
+
+    view.innerHTML = `<div class="crumb"><a href="#/story">历史剧情关卡</a> / 第 ${story.order} 章</div><div class="story-shell"><div class="story-chapter"><span>${story.numeral}</span><div><small>${story.era}</small><h1>${story.title}</h1></div></div><ol class="story-steps">${phases.map((item, index) => `<li class="${index < phaseIndex ? 'done' : index === phaseIndex ? 'current' : ''}"><i>${index < phaseIndex ? '✓' : index + 1}</i>${phaseLabels[item]}</li>`).join('')}</ol>${content}</div>`;
+    view.querySelector('#story-accept')?.addEventListener('click', () => { store.setStoryPhase(id, 'mission'); paint(); });
+    view.querySelector('#story-read')?.addEventListener('click', () => { store.setStoryPhase(id, 'question'); paint(); });
+    view.querySelectorAll('[data-answer]').forEach(button => button.addEventListener('click', () => {
+      selected = Number(button.dataset.answer);
+      feedback = '';
+      paint();
+    }));
+    view.querySelector('#story-submit')?.addEventListener('click', () => {
+      if (selected === null) return;
+      if (selected === story.question.a) {
+        store.setStoryPhase(id, 'interpretation');
+        feedback = '';
+        paint();
+      } else {
+        feedback = '这份解释与证据不符。再核对读数、体系边界和物质去向，然后选择一次。';
+        paint();
+      }
+    });
+    view.querySelector('#story-finish')?.addEventListener('click', () => {
+      if (store.completeStory(id)) toast('历史章节完成：' + story.title);
+      paint();
+    });
+    view.querySelector('#story-replay')?.addEventListener('click', () => { selected = null; store.setStoryPhase(id, 'intro'); paint(); });
+  }
+
+  paint();
 }
 
 function viewSymbols() {
@@ -609,21 +717,26 @@ function viewLab() {
 }
 
 function viewExp(id) {
-  const e = expById(id);
+  const [expId, query = ''] = String(id).split('?');
+  const params = new URLSearchParams(query);
+  const returnMatch = String(params.get('return') || '').match(/^story\/([a-z0-9_-]+)$/);
+  const returnStory = returnMatch ? storyById(returnMatch[1]) : null;
+  const e = expById(expId);
   if (!e) { view.innerHTML = '<div class="panel">实验不存在。</div>'; return; }
   lastContext = { exp: e.title };
-  const firstVisit = !store.state.expsVisited[id];
-  store.visitExp(id);
+  const firstVisit = !store.state.expsVisited[expId];
+  store.visitExp(expId);
   if (firstVisit && store.expVisitedCount() === Object.keys(EXPERIMENTS).length) achieve('exp_all');
   view.innerHTML = `
-    <div class="crumb"><a href="#/lab">虚拟实验室</a> / ${e.title}</div>
+    <div class="crumb">${returnStory ? `<a href="#/story/${returnStory.id}">时代任务：${returnStory.title}</a> /` : '<a href="#/lab">虚拟实验室</a> /'} ${e.title}</div>
     <div class="lesson-head"><h1>${e.title}</h1>${e.tags.map(t => `<span class="badge">${t}</span>`).join('')}</div>
     <p class="muted">${e.oneLine}</p>
+    ${returnStory ? `<div class="panel gold story-return"><h3>当前时代任务</h3><p>${returnStory.mission.recordHint}</p></div>` : ''}
     <div class="safety"><h4>安全提示</h4><ul>${e.safety.map(s => `<li>${s}</li>`).join('')}</ul></div>
     <div id="exp-mount"></div>
     <div class="exp-actions">
       <a class="btn ghost" href="#/notebook">查看实验本 →</a>
-      <a class="btn ghost" href="#/lab">返回实验室列表</a>
+      ${returnStory ? `<a class="btn primary" href="#/story/${returnStory.id}">返回时代任务，核验证据 →</a>` : '<a class="btn ghost" href="#/lab">返回实验室列表</a>'}
     </div>`;
   e.render(view.querySelector('#exp-mount'), {
     record(params, results) {
@@ -1138,11 +1251,12 @@ function openSearch() {
     ...Object.entries(GLOSSARY).map(([k, g]) => ({ type: '术语', t: g.t, sub: g.d.slice(0, 80), href: '#/glossary', hay: g.t + ' ' + g.d })),
     ...Object.values(EXPERIMENTS).map(e => ({ type: '实验', t: e.title, sub: e.oneLine, href: '#/exp/' + e.id, hay: e.title + ' ' + e.oneLine + ' ' + e.tags.join(' ') })),
     ...TIMELINE.map(s => ({ type: '历史', t: s.era + ' ' + s.title, sub: strip(s.summary).slice(0, 80), href: '#/timeline', hay: s.title + ' ' + strip(s.summary) + ' ' + strip(s.connection) })),
+    ...STORIES.map(s => ({ type: '剧情', t: s.title, sub: s.subtitle, href: '#/story/' + s.id, hay: s.title + ' ' + s.subtitle + ' ' + strip(s.intro) })),
     ...SYMBOLS.map(s => ({ type: '符号', t: s.name, sub: s.en, href: '#/symbols', hay: s.name + ' ' + s.en + ' ' + strip(s.meaning) }))
   ];
   openModal(`<h3>🔍 全站搜索</h3>
     <input class="search-box" id="s-in" placeholder="搜索课程、术语、实验、历史、符号…" autocomplete="off">
-    <div id="s-res"><p class="muted">输入关键词，如"摩尔""滴定""玻义耳"。</p></div>
+    <div id="s-res"><p class="muted">输入关键词，如"摩尔""滴定""波义耳"。</p></div>
     <p style="margin-top:10px"><button class="btn small" onclick="document.getElementById('modal-root').innerHTML=''">关闭</button></p>`);
   const input = document.getElementById('s-in');
   const res = document.getElementById('s-res');
@@ -1169,6 +1283,8 @@ function render() {
   view.scrollTop = 0;
   window.scrollTo(0, 0);
   if (hash.startsWith('#/timeline')) viewTimeline();
+  else if (hash.startsWith('#/story/')) viewStory(hash.slice(8).split('?')[0]);
+  else if (hash.startsWith('#/story')) viewStoryIndex();
   else if (hash.startsWith('#/symbols')) viewSymbols();
   else if (hash.startsWith('#/glossary')) viewGlossary();
   else if (hash.startsWith('#/flashcards')) viewFlashcards();

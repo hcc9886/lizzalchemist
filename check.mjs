@@ -5,6 +5,7 @@ import { SYMBOLS } from './js/data/symbols.js';
 import { TRACKS, ALL_UNITS, LEVELS, unitById, unitLevel } from './js/data/curriculum.js';
 import { QUIZZES } from './js/data/quizzes.js';
 import { EXPERIMENTS } from './js/experiments/index.js';
+import { STORIES, storyById, isStoryUnlocked, storyEvidence } from './js/data/stories.js';
 
 const errors = [];
 
@@ -163,6 +164,40 @@ for (let target = 1; target <= 3; target++) {
 try { scoreDiagnostic(rightAnswers.slice(1)); errors.push('诊断接受了不完整答案'); } catch (e) { /* expected */ }
 try { scoreDiagnostic(Array(DIAGNOSTIC_QUESTIONS.length).fill(null)); errors.push('诊断接受了空答案'); } catch (e) { /* expected */ }
 
+// 13) 历史剧情关卡与任务证据
+if (STORIES.length < 3) errors.push('历史剧情少于 3 章');
+if (new Set(STORIES.map(s => s.id)).size !== STORIES.length) errors.push('剧情 ID 有重复');
+for (const [i, story] of STORIES.entries()) {
+  if (story.order !== i + 1 || !story.title || !story.intro || !story.interpretation?.takeaway) errors.push(`剧情第 ${i + 1} 章结构不完整`);
+  if (storyById(story.id) !== story) errors.push('剧情查找结果错误: ' + story.id);
+  if (!EXPERIMENTS[story.mission?.experiment]) errors.push(`剧情 ${story.id} 引用了不存在实验`);
+  if (!story.mission?.brief || !story.mission?.recordHint || !story.mission?.waitingText) errors.push(`剧情 ${story.id} 任务说明不完整`);
+  const q = story.question;
+  if (!q?.q || !Array.isArray(q.opts) || q.opts.length !== 4 || !q.why || !(q.a >= 0 && q.a < q.opts.length)) errors.push(`剧情 ${story.id} 问答题结构不完整`);
+  if (q?.opts?.some(o => !o)) errors.push(`剧情 ${story.id} 问答题有空选项`);
+  if (!story.dataset?.columns?.length || !story.dataset?.rows?.length || story.dataset.rows.some(row => row.length !== story.dataset.columns.length)) errors.push(`剧情 ${story.id} 数据表不完整`);
+  if (!unitById(story.relatedUnit)) errors.push(`剧情 ${story.id} 关联了不存在课程`);
+  const progress = Object.fromEntries(STORIES.slice(0, i).map(s => [s.id, { completed: true }]));
+  if (!isStoryUnlocked(story, progress)) errors.push(`剧情 ${story.id} 顺序解锁失败`);
+  if (i > 0 && isStoryUnlocked(story, {})) errors.push(`剧情 ${story.id} 未完成前一章就解锁`);
+}
+const boyleNotes = [
+  { exp: 'gaslaws', params: { n: '1.00 mol', T: '300 K', V: '50 L' }, results: { 压强: '49.9 kPa', 'PV 乘积': '2494' } },
+  { exp: 'gaslaws', params: { n: '1.00 mol', T: '300 K', V: '10 L' }, results: { 压强: '249.4 kPa', 'PV 乘积': '2494' } }
+];
+if (!storyEvidence(storyById('boyle'), boyleNotes).ready) errors.push('波义耳剧情未接受有效 PV 证据');
+const warmNote = structuredClone(boyleNotes);
+warmNote[1].params.T = '310 K';
+if (storyEvidence(storyById('boyle'), warmNote).ready) errors.push('波义耳剧情接受了改变温度的记录');
+const richNote = { exp: 'combustion', params: { 燃料: '甲烷 CH₄', 氧气浓度: '21 %' }, results: { 火焰状态: '蓝色（充分燃烧）', 主要产物: 'CO₂ + H₂O' } };
+const orangeNote = { exp: 'combustion', params: { 燃料: '甲烷 CH₄', 氧气浓度: '15 %' }, results: { 火焰状态: '橙色（不完全）', 主要产物: 'CO₂ + CO + 碳粒（烟）' } };
+const redNote = { exp: 'combustion', params: { 燃料: '甲烷 CH₄', 氧气浓度: '13 %' }, results: { 火焰状态: '红色（严重缺氧）', 主要产物: '大量 CO（剧毒！）+ 碳粒' } };
+if (!storyEvidence(storyById('lavoisier'), [richNote, orangeNote]).ready) errors.push('拉瓦锡剧情未接受完全/不完全燃烧证据');
+if (!storyEvidence(storyById('phlogiston'), [richNote, redNote]).ready) errors.push('燃素说剧情未接受蓝色/红色火焰证据');
+const otherFuel = structuredClone(orangeNote);
+otherFuel.params.燃料 = '蜡烛';
+if (storyEvidence(storyById('lavoisier'), [richNote, otherFuel]).ready) errors.push('燃烧剧情接受了不同燃料的对照记录');
+
 if (errors.length) {
   console.error('FAIL\n' + errors.join('\n'));
   process.exit(1);
@@ -177,5 +212,6 @@ if (errors.length) {
     SYMBOLS.length + ' symbols, ' +
     Object.keys(GLOSSARY).length + ' glossary terms, ' +
     LEVELS.length + ' levels, ' +
-    DIAGNOSTIC_QUESTIONS.length + ' diagnostic questions');
+    DIAGNOSTIC_QUESTIONS.length + ' diagnostic questions, ' +
+    STORIES.length + ' story chapters');
 }
