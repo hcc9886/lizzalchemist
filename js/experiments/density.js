@@ -1,5 +1,6 @@
 // 实验1：密度与浮沉（v4：全屏 2.5D 舞台 + 悬浮 HUD + 称重 / 倾倒 / 排水法真实交互）
 import { achieve, canvasXY } from '../expkit.js';
+import { play, setAmbient } from '../audio.js';
 
 const SOLIDS = {
   wood: { name: '木块', icon: '🪵', m: 80,  rho: 0.60 },
@@ -41,6 +42,7 @@ let raf = null, lastT = 0, state = null, root = null, CTX = null;
 let canvas = null, g2d = null, $ = null, upBound = false;
 const mouse = { x: -999, y: -999 };
 let winMove = null, winUp = null;
+let pourSounding = false, lastBalanceTick = 0;
 
 function initState() {
   return {
@@ -56,7 +58,7 @@ function initState() {
     drag: null, drag2: null, pour: null, held: null,
     parts: [], splashes: [], hover: null,
     weighed: null, curKey: null, V: null, rho: null,
-    bal: { show: 0, target: 0 },
+    bal: { show: 0, target: 0, settled: true },
     seen: { float: false, sink: false },
     lastStatus: '—',
     goals: { m: false, V: false, rho: false, float: false, sink: false },
@@ -77,6 +79,7 @@ export default {
 function mount(rootEl, ctx) {
     root = rootEl; CTX = ctx;
     state = initState(); lastT = 0;
+    pourSounding = false; lastBalanceTick = 0;
     root.innerHTML = `
       <div class="lab-stage">
         <canvas id="d-canvas" width="${W}" height="${H}"></canvas>
@@ -119,6 +122,8 @@ function mount(rootEl, ctx) {
 }
 
 function teardown() {
+  setAmbient('pour', 0);
+  pourSounding = false;
   if (raf) cancelAnimationFrame(raf);
   raf = null;
   if (winMove) { window.removeEventListener('pointermove', winMove); winMove = null; }
@@ -183,7 +188,7 @@ function pourInto(where, type, amt) {
     if (got <= 0) {
       if (b[type] <= 0) log(`${LIQUIDS[type].name}瓶已经空了（重置可补满）`);
       else if (room <= 0 && !state.overflowWarned) { state.overflowWarned = true; log('量筒快满了，物体再放进去会溢出！', true); }
-      return;
+      return false;
     }
     b[type] -= got;
     state.cyl.vol += got;
@@ -194,11 +199,12 @@ function pourInto(where, type, amt) {
   } else {
     const room = Math.max(0, TANK.cap - tankVol());
     const got = Math.min(amt, room, b[type]);
-    if (got <= 0) { if (b[type] <= 0) log(`${LIQUIDS[type].name}瓶已经空了（重置可补满）`); return; }
+    if (got <= 0) { if (b[type] <= 0) log(`${LIQUIDS[type].name}瓶已经空了（重置可补满）`); return false; }
     b[type] -= got;
     addTank(type, got);
     if (state.tank.obj) markSeenTank(state.tank.obj);
   }
+  return true;
 }
 function addTank(type, vol) {
   const L = state.tank.layers;
@@ -218,6 +224,8 @@ function weigh(key) {
   const s = state.solids[key];
   s.loc = 'pan';
   state.bal.target = SOLIDS[key].m;
+  state.bal.settled = false;
+  lastBalanceTick = 0;
   state.curKey = key;
   const fresh = !state.weighed || state.weighed.key !== key;
   state.weighed = { key, m: SOLIDS[key].m };
@@ -339,7 +347,11 @@ function hitSolid(x, y) {
 }
 function detach(key) {
   const s = state.solids[key];
-  if (s.loc === 'pan' && state.bal.target) state.bal.target = 0;
+  if (s.loc === 'pan' && state.bal.target) {
+    state.bal.target = 0;
+    state.bal.settled = false;
+    lastBalanceTick = 0;
+  }
   if (s.loc === 'cyl' && state.cyl.obj === key) state.cyl.obj = null;
   if (s.loc === 'tank' && state.tank.obj === key) state.tank.obj = null;
   s.loc = 'hand';
@@ -476,8 +488,17 @@ function objPos(key) {
 
 /* ---------- 帧更新 ---------- */
 function update(dt) {
-  state.bal.show += (state.bal.target - state.bal.show) * Math.min(1, dt * 7);
-  if (Math.abs(state.bal.show - state.bal.target) < 0.005) state.bal.show = state.bal.target;
+  const balanceMoving = Math.abs(state.bal.show - state.bal.target) >= 0.005;
+  if (balanceMoving) {
+    const now = performance.now();
+    if (now - lastBalanceTick >= 55) { play('tick'); lastBalanceTick = now; }
+    state.bal.show += (state.bal.target - state.bal.show) * Math.min(1, dt * 7);
+    if (Math.abs(state.bal.show - state.bal.target) < 0.005) state.bal.show = state.bal.target;
+  } else if (!state.bal.settled) {
+    state.bal.show = state.bal.target;
+    state.bal.settled = true;
+    if (state.bal.target > 0) play('record');
+  }
 
   if (state.drag2 && state.drag2.kind === 'bottle') {
     const { x, y, key } = state.drag2;
@@ -486,14 +507,19 @@ function update(dt) {
     if (inRect(x, y, cylM)) state.pour = { target: 'cyl', type: key, x, y: y + 6, tx: CYL.x + CYL.w / 2, ty: cylSurf() };
     else if (inRect(x, y, tankM)) state.pour = { target: 'tank', type: key, x, y: y + 6, tx: TANK.x + TANK.w / 2, ty: tankSurf() };
     else state.pour = null;
-    if (state.pour) {
-      pourInto(state.pour.target, state.pour.type, 70 * dt);
-      if (Math.random() < 0.85) state.parts.push({
-        x: state.pour.x + (Math.random() - .5) * 4, y: state.pour.y,
-        vx: (Math.random() - .5) * 24, vy: 260 + Math.random() * 120, life: .6, type: state.pour.type
-      });
+    const flowing = state.pour ? pourInto(state.pour.target, state.pour.type, 70 * dt) : false;
+    if (flowing !== pourSounding) {
+      pourSounding = flowing;
+      setAmbient('pour', flowing ? 1 : 0);
     }
-  } else state.pour = null;
+    if (flowing && Math.random() < 0.85) state.parts.push({
+      x: state.pour.x + (Math.random() - .5) * 4, y: state.pour.y,
+      vx: (Math.random() - .5) * 24, vy: 260 + Math.random() * 120, life: .6, type: state.pour.type
+    });
+  } else {
+    state.pour = null;
+    if (pourSounding) { pourSounding = false; setAmbient('pour', 0); }
+  }
 
   state.parts = state.parts.filter(p => {
     p.life -= dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 380 * dt;

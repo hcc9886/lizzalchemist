@@ -8,6 +8,7 @@ const DEFAULT = {
   persona: null,            // 'zero' | 'middle' | 'college' | 'adult' | 'teacher'
   diagnostic: null,         // {version, recommendedLevel, correct, total, scores, ts}
   stories: {},              // storyId -> {visited, phase, completed, ts, completedAt}
+  sound: { muted: false },  // WebAudio 偏好，随学习存档同步
   lessonsDone: {},          // unitId -> true
   quiz: {},                 // unitId -> {best, ts}
   notebook: [],             // [{ts, exp, title, params, results}]
@@ -44,6 +45,11 @@ export const store = {
   },
 
   setPersona(p) { this.state.persona = p; this.save(); },
+
+  setSoundMuted(muted) {
+    this.state.sound = { muted: !!muted };
+    this.save();
+  },
 
   setDiagnostic(result) {
     this.state.diagnostic = Object.assign({ ts: Date.now() }, result);

@@ -16,6 +16,7 @@ import { APPARATUS_DEFS, APPARATUS_TREE } from './data/apparatus.js';
 import { hydrateChem, bulkHydrate } from './data/pubchem.js';
 import { makeQuiz5 } from './data/practice.js';
 import * as sync from './sync.js';
+import { play, stopAllAmbient, unlockAudio, toggleMuted, syncSoundState } from './audio.js';
 
 const view = document.getElementById('view');
 let expCleanup = null;
@@ -742,6 +743,7 @@ function viewExp(id) {
     record(params, results) {
       store.addNotebookRecord({ exp: e.id, title: e.title, params, results });
       store.bumpDaily('exp');
+      play('record');
       if (store.state.notebook.length === 1) achieve('first_exp');
       if (store.state.notebook.length === 10) achieve('exp_ten');
       toast('已记录到实验本');
@@ -1277,6 +1279,7 @@ function openSearch() {
 /* ---------- router ---------- */
 
 function render() {
+  stopAllAmbient();
   if (expCleanup) { expCleanup(); expCleanup = null; }
   const hash = location.hash || '#/home';
   setActiveNav(hash);
@@ -1307,6 +1310,33 @@ function render() {
 window.addEventListener('hashchange', render);
 render();
 
+/* ---------- 音效控制 ---------- */
+
+const soundBtn = document.getElementById('sound-btn');
+
+function refreshSoundBtn() {
+  const muted = store.state.sound?.muted !== false;
+  const label = muted ? '开启音效' : '关闭音效';
+  soundBtn.classList.toggle('muted', muted);
+  soundBtn.setAttribute('aria-pressed', String(!muted));
+  soundBtn.setAttribute('aria-label', label);
+  soundBtn.title = label;
+}
+
+soundBtn.addEventListener('click', () => {
+  const muted = toggleMuted();
+  refreshSoundBtn();
+  toast(muted ? '音效已关闭' : '音效已开启');
+});
+refreshSoundBtn();
+
+document.addEventListener('click', event => {
+  const button = event.target.closest?.('button');
+  if (button && !button.disabled) play('button');
+});
+window.addEventListener('pointerdown', unlockAudio, { once: true, capture: true });
+window.addEventListener('keydown', unlockAudio, { once: true, capture: true });
+
 /* ---------- 账号与多平台云同步 ---------- */
 
 sync.bindSync({
@@ -1314,6 +1344,8 @@ sync.bindSync({
   restore(data) {
     Object.assign(store.state, data);
     store.save();
+    syncSoundState();
+    refreshSoundBtn();
   }
 });
 sync.boot();

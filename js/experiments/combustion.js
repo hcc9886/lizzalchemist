@@ -1,5 +1,6 @@
 // 实验9：燃烧与火焰
 import { createKit, drag, hotspot } from '../expkit.js';
+import { play, setAmbient } from '../audio.js';
 
 const FUELS = {
   ch4: { name: '甲烷 CH₄（天然气）', eqFull: 'CH₄ + 2O₂ → CO₂ + 2H₂O', eqPart: '2CH₄ + 3O₂ → 2CO + 4H₂O（不完全燃烧）', temp: [1900, 1100, 650] },
@@ -241,6 +242,8 @@ export default {
         if (!state.lit && (x - FLAME.x) * (x - FLAME.x) + (y - (FLAME.y - 20)) * (y - (FLAME.y - 20)) < 30 * 30) {
           if (state.o2 >= 12) {
             state.lit = true; state.extinguished = false; state.lastTier = null;
+            play('ignite');
+            setAmbient('flame', 1);
             kit.say('点着了！注意看火焰颜色与产物面板。');
           } else {
             kit.say('氧气浓度低于 12%——连火柴都点不着。燃烧三要素缺一不可。');
@@ -250,24 +253,33 @@ export default {
       end(x, y) { state.dragging = false; }
     });
 
-    $('b-fuel').addEventListener('change', e => { state.fuel = e.target.value; state.lit = false; state.lastTier = null; });
+    $('b-fuel').addEventListener('change', e => {
+      if (state.lit) { play('extinguish'); setAmbient('flame', 0); }
+      state.fuel = e.target.value; state.lit = false; state.lastTier = null;
+    });
     $('b-o2').addEventListener('input', e => {
       state.o2 = +e.target.value;
       $('b-ov').textContent = state.o2 + ' %';
       if (state.lit && state.o2 < 12) {
         state.lit = false; state.extinguished = true; state.extFlash = 90;
+        play('extinguish');
+        setAmbient('flame', 0);
         kit.say('氧气降到 12% 以下，火焰自己熄灭了。');
       }
     });
     $('b-lid').addEventListener('click', () => {
       if (state.lit) {
         state.lit = false; state.extinguished = true; state.extFlash = 90; state.lastTier = null;
+        play('extinguish');
+        setAmbient('flame', 0);
         kit.say('盖灭 = 隔绝氧气。烧烧烤炉时盖盖子、油锅起火盖锅盖，都是这个原理（油锅火千万别用水浇！）。');
       } else kit.say('还没有火焰在烧。');
     });
     $('b-water').addEventListener('click', () => {
       if (state.lit) {
         state.lit = false; state.extinguished = true; state.extFlash = 90; state.lastTier = null;
+        play('extinguish');
+        setAmbient('flame', 0);
         kit.say('滴水降温：把温度降到燃点以下。注意这只适用于普通固体燃料，油类与电器火灾有专门处置方式。');
       } else kit.say('还没有火焰在烧。');
     });
@@ -281,11 +293,13 @@ export default {
 
     function loop() {
       draw();
+      setAmbient('flame', state.lit ? 1 : 0);
       raf = requestAnimationFrame(loop);
     }
     loop();
   },
   destroy() {
+    setAmbient('flame', 0);
     if (raf) cancelAnimationFrame(raf); raf = null;
     soot.length = 0; smoke.length = 0;
   }

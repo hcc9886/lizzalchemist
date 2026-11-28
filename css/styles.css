@@ -658,3 +658,16 @@ a.story-card:hover{border-color:var(--gold);transform:translateY(-3px);box-shado
   .story-actions .btn{margin-left:0}
   .story-data,.story-mission,.story-evidence{padding:13px}
 }
+
+/* ===== v4-7：WebAudio 合成音效 ===== */
+.sound-btn{display:inline-flex;align-items:center;justify-content:center;flex:0 0 36px;width:36px;height:36px;padding:0;
+  border:1px solid rgba(212,165,66,.4);border-radius:10px;background:rgba(212,165,66,.10);color:var(--gold2);
+  cursor:pointer;transition:color .2s,background .2s,border-color .2s}
+.sound-btn:hover{background:rgba(212,165,66,.2);border-color:var(--gold)}
+.sound-btn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.sound-btn svg{width:18px;height:18px}
+.sound-btn.muted{color:var(--muted);border-color:var(--line);background:rgba(126,160,224,.08)}
+.sound-btn.muted .sound-waves{display:none}
+.sound-btn:not(.muted) .sound-slash{display:none}
+@media(max-width:760px){.sound-btn{flex-basis:34px;width:34px;height:34px}}
+@media(max-width:600px){.topbar{gap:10px;padding-inline:14px}.sound-btn{flex-basis:32px;width:32px;height:32px}}

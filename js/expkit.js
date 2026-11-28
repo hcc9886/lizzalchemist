@@ -1,10 +1,12 @@
 // 实验通用套件：解说条 / 实验目标 / 实验步骤向导 / 实时成分表 / 方程式横幅 / 拖拽与热点
 import { store, toast, openModal } from './progress.js';
 import { achById } from './data/achievements.js';
+import { play } from './audio.js';
 
 /* 成就解锁（若为新解锁则弹提示） */
 export function achieve(id) {
   if (store.setAchievement(id)) {
+    play('achievement');
     const a = achById(id);
     if (a) toast('成就达成 ★ ' + a.name + '：' + a.desc);
   }
@@ -182,6 +184,7 @@ export function createKit(root, opts) {
       won = true;
       chal.classList.add('won');
       chal.innerHTML = '<b>挑战</b><span>✓ 完成！成就已解锁</span>';
+      play('success');
       toast('挑战完成！');
       if (opts.ach) achieve(opts.ach);
     },

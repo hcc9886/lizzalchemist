@@ -5,6 +5,7 @@ import { createExpUI } from '../engine/panel.js';
 import { createProcedure, logReportHTML } from '../engine/fsm.js';
 import { achieve } from '../expkit.js';
 import { openModal, store } from '../progress.js';
+import { setAmbient } from '../audio.js';
 
 let raf = null, state = null, bench = null, ui = null, proc = null, ctxRef = null, t0 = 0, tLast = 0;
 const WATER = '#3f7fb5';
@@ -422,6 +423,7 @@ export default {
     $('o-reset').onclick = () => { reset(); };
     function reset() {
       cancelAnimationFrame(raf); raf = null;
+      setAmbient('bubbles', 0);
       ui.destroy();
       root.innerHTML = '';
       _EX.o2lab.render(root, ctxRef);
@@ -465,6 +467,7 @@ export default {
 
       // 气泡阶段
       const phase = state.heating ? (state.heatT < 1.2 ? 'irregular' : state.heatT < 2 ? 'gap' : 'steady') : 'none';
+      setAmbient('bubbles', phase === 'steady' ? 1 : phase === 'irregular' ? 0.45 : 0);
       if (phase !== 'none' && phase !== 'gap') {
         if (Math.random() < 0.6) {
           const inJar = state.collecting && jar;
@@ -617,7 +620,10 @@ export default {
     updateTabs(null, null, 'none', 25);
     raf = requestAnimationFrame(frame);
   },
-  destroy() { if (raf) cancelAnimationFrame(raf); raf = null; bench = null; ui = null; proc = null; state = null; }
+  destroy() {
+    setAmbient('bubbles', 0);
+    if (raf) cancelAnimationFrame(raf); raf = null; bench = null; ui = null; proc = null; state = null;
+  }
 };
 
 import { EXPERIMENTS as _EX } from './index.js';

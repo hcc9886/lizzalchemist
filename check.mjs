@@ -6,6 +6,7 @@ import { TRACKS, ALL_UNITS, LEVELS, unitById, unitLevel } from './js/data/curric
 import { QUIZZES } from './js/data/quizzes.js';
 import { EXPERIMENTS } from './js/experiments/index.js';
 import { STORIES, storyById, isStoryUnlocked, storyEvidence } from './js/data/stories.js';
+import { SOUND_CATALOG } from './js/audio.js';
 
 const errors = [];
 
@@ -198,6 +199,13 @@ const otherFuel = structuredClone(orangeNote);
 otherFuel.params.燃料 = '蜡烛';
 if (storyEvidence(storyById('lavoisier'), [richNote, otherFuel]).ready) errors.push('燃烧剧情接受了不同燃料的对照记录');
 
+// 14) WebAudio 合成音效目录
+const requiredSounds = ['button', 'tick', 'achievement', 'record', 'ignite', 'extinguish', 'success', 'error'];
+for (const name of requiredSounds) {
+  if (!SOUND_CATALOG[name]) errors.push('缺少音效: ' + name);
+}
+if (Object.values(SOUND_CATALOG).some(label => typeof label !== 'string' || !label.trim())) errors.push('音效名称不完整');
+
 if (errors.length) {
   console.error('FAIL\n' + errors.join('\n'));
   process.exit(1);
@@ -213,5 +221,6 @@ if (errors.length) {
     Object.keys(GLOSSARY).length + ' glossary terms, ' +
     LEVELS.length + ' levels, ' +
     DIAGNOSTIC_QUESTIONS.length + ' diagnostic questions, ' +
-    STORIES.length + ' story chapters');
+    STORIES.length + ' story chapters, ' +
+    Object.keys(SOUND_CATALOG).length + ' synthesized sounds');
 }
